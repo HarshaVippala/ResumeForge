@@ -259,5 +259,6 @@ export const useResumeStore = create<ResumeStore>()(
         currentSection: state.currentSection
       })
     }
-  )
+  ),
+  { name: 'resume-store' }
 )
