@@ -71,8 +71,8 @@ const defaultResumeState: ResumeState = {
 }
 
 export const useResumeStore = create<ResumeStore>()(
-  persist(
-    devtools(
+  devtools(
+    persist(
       (set, get) => ({
         // Initial state
         resumes: [],
@@ -90,175 +90,176 @@ export const useResumeStore = create<ResumeStore>()(
         resumeState: defaultResumeState,
         currentSection: 'summary',
 
-      // Resume actions
-      setResumes: (resumes) => {
-        set({ resumes })
-        get().applyFiltersAndSort()
-      },
+        // Resume actions
+        setResumes: (resumes) => {
+          set({ resumes })
+          get().applyFiltersAndSort()
+        },
 
-      addResume: (resume) => {
-        set((state) => ({
-          resumes: [...state.resumes, resume]
-        }))
-        get().applyFiltersAndSort()
-      },
+        addResume: (resume) => {
+          set((state) => ({
+            resumes: [...state.resumes, resume]
+          }))
+          get().applyFiltersAndSort()
+        },
 
-      updateResume: (id, updates) => {
-        set((state) => ({
-          resumes: state.resumes.map((resume) =>
-            resume.id === id ? { ...resume, ...updates } : resume
-          )
-        }))
-        get().applyFiltersAndSort()
-      },
+        updateResume: (id, updates) => {
+          set((state) => ({
+            resumes: state.resumes.map((resume) =>
+              resume.id === id ? { ...resume, ...updates } : resume
+            )
+          }))
+          get().applyFiltersAndSort()
+        },
 
-      deleteResume: (id) => {
-        set((state) => ({
-          resumes: state.resumes.filter((resume) => resume.id !== id)
-        }))
-        get().applyFiltersAndSort()
-      },
+        deleteResume: (id) => {
+          set((state) => ({
+            resumes: state.resumes.filter((resume) => resume.id !== id)
+          }))
+          get().applyFiltersAndSort()
+        },
 
-      setFilters: (newFilters) => {
-        set((state) => ({
-          filters: { ...state.filters, ...newFilters }
-        }))
-        get().applyFiltersAndSort()
-      },
+        setFilters: (newFilters) => {
+          set((state) => ({
+            filters: { ...state.filters, ...newFilters }
+          }))
+          get().applyFiltersAndSort()
+        },
 
-      setSort: (sort) => {
-        set({ sort })
-        get().applyFiltersAndSort()
-      },
+        setSort: (sort) => {
+          set({ sort })
+          get().applyFiltersAndSort()
+        },
 
-      applyFiltersAndSort: () => {
-        const { resumes, filters, sort } = get()
-        let filtered = [...resumes]
+        applyFiltersAndSort: () => {
+          const { resumes, filters, sort } = get()
+          let filtered = [...resumes]
 
-        // Apply search filter
-        if (filters.search) {
-          const searchLower = filters.search.toLowerCase()
-          filtered = filtered.filter((resume) =>
-            resume.title.toLowerCase().includes(searchLower) ||
-            resume.company.toLowerCase().includes(searchLower) ||
-            resume.role.toLowerCase().includes(searchLower) ||
-            resume.tags?.some(tag => tag.toLowerCase().includes(searchLower))
-          )
-        }
-
-        // Apply company filter
-        if (filters.companies.length > 0) {
-          filtered = filtered.filter((resume) =>
-            filters.companies.includes(resume.company)
-          )
-        }
-
-        // Apply job type filter
-        if (filters.jobTypes.length > 0) {
-          filtered = filtered.filter((resume) =>
-            filters.jobTypes.includes(resume.metadata.classification.jobType)
-          )
-        }
-
-        // Apply experience level filter
-        if (filters.experiencelevels.length > 0) {
-          filtered = filtered.filter((resume) =>
-            filters.experiencelevels.includes(resume.metadata.classification.experienceLevel)
-          )
-        }
-
-        // Apply ATS score filter
-        filtered = filtered.filter((resume) => {
-          const score = resume.final_score || 0
-          return score >= filters.atsScoreRange[0] && score <= filters.atsScoreRange[1]
-        })
-
-        // Apply sorting
-        filtered.sort((a, b) => {
-          let aValue: unknown, bValue: unknown
-
-          switch (sort.field) {
-            case 'company':
-              aValue = a.company.toLowerCase()
-              bValue = b.company.toLowerCase()
-              break
-            case 'role':
-              aValue = a.role.toLowerCase()
-              bValue = b.role.toLowerCase()
-              break
-            case 'final_score':
-              aValue = a.final_score || 0
-              bValue = b.final_score || 0
-              break
-            case 'created_at':
-            default:
-              aValue = new Date(a.created_at)
-              bValue = new Date(b.created_at)
-              break
+          // Apply search filter
+          if (filters.search) {
+            const searchLower = filters.search.toLowerCase()
+            filtered = filtered.filter((resume) =>
+              resume.title.toLowerCase().includes(searchLower) ||
+              resume.company.toLowerCase().includes(searchLower) ||
+              resume.role.toLowerCase().includes(searchLower) ||
+              resume.tags?.some(tag => tag.toLowerCase().includes(searchLower))
+            )
           }
 
-          if (aValue < bValue) return sort.direction === 'asc' ? -1 : 1
-          if (aValue > bValue) return sort.direction === 'asc' ? 1 : -1
-          return 0
+          // Apply company filter
+          if (filters.companies.length > 0) {
+            filtered = filtered.filter((resume) =>
+              filters.companies.includes(resume.company)
+            )
+          }
+
+          // Apply job type filter
+          if (filters.jobTypes.length > 0) {
+            filtered = filtered.filter((resume) =>
+              filters.jobTypes.includes(resume.metadata.classification.jobType)
+            )
+          }
+
+          // Apply experience level filter
+          if (filters.experiencelevels.length > 0) {
+            filtered = filtered.filter((resume) =>
+              filters.experiencelevels.includes(resume.metadata.classification.experienceLevel)
+            )
+          }
+
+          // Apply ATS score filter
+          filtered = filtered.filter((resume) => {
+            const score = resume.final_score || 0
+            return score >= filters.atsScoreRange[0] && score <= filters.atsScoreRange[1]
+          })
+
+          // Apply sorting
+          filtered.sort((a, b) => {
+            let aValue: unknown, bValue: unknown
+
+            switch (sort.field) {
+              case 'company':
+                aValue = a.company.toLowerCase()
+                bValue = b.company.toLowerCase()
+                break
+              case 'role':
+                aValue = a.role.toLowerCase()
+                bValue = b.role.toLowerCase()
+                break
+              case 'final_score':
+                aValue = a.final_score || 0
+                bValue = b.final_score || 0
+                break
+              case 'created_at':
+              default:
+                aValue = new Date(a.created_at)
+                bValue = new Date(b.created_at)
+                break
+            }
+
+            if (aValue < bValue) return sort.direction === 'asc' ? -1 : 1
+            if (aValue > bValue) return sort.direction === 'asc' ? 1 : -1
+            return 0
+          })
+
+          set({ filteredResumes: filtered })
+        },
+
+        setLoading: (isLoading) => set({ isLoading }),
+        setError: (error) => set({ error }),
+
+        // Job Application actions
+        setJobApplications: (jobApplications) => {
+          set({ jobApplications, filteredApplications: jobApplications })
+        },
+
+        addJobApplication: (application) => {
+          set((state) => ({
+            jobApplications: [...state.jobApplications, application],
+            filteredApplications: [...state.filteredApplications, application]
+          }))
+        },
+
+        updateJobApplication: (id, updates) => {
+          set((state) => ({
+            jobApplications: state.jobApplications.map((app) =>
+              app.id === id ? { ...app, ...updates } : app
+            ),
+            filteredApplications: state.filteredApplications.map((app) =>
+              app.id === id ? { ...app, ...updates } : app
+            )
+          }))
+        },
+
+        deleteJobApplication: (id) => {
+          set((state) => ({
+            jobApplications: state.jobApplications.filter((app) => app.id !== id),
+            filteredApplications: state.filteredApplications.filter((app) => app.id !== id)
+          }))
+        },
+
+        // Generator actions
+        setGeneratorStep: (generatorStep) => set({ generatorStep }),
+        setJobAnalysis: (jobAnalysis) => set({ jobAnalysis }),
+        setResumeState: (resumeState) => set({ resumeState }),
+        setCurrentSection: (currentSection) => set({ currentSection }),
+        resetGenerator: () => set({ 
+          generatorStep: 'analysis',
+          jobAnalysis: null,
+          resumeState: defaultResumeState,
+          currentSection: 'summary'
         })
-
-        set({ filteredResumes: filtered })
-      },
-
-      setLoading: (isLoading) => set({ isLoading }),
-      setError: (error) => set({ error }),
-
-      // Job Application actions
-      setJobApplications: (jobApplications) => {
-        set({ jobApplications, filteredApplications: jobApplications })
-      },
-
-      addJobApplication: (application) => {
-        set((state) => ({
-          jobApplications: [...state.jobApplications, application],
-          filteredApplications: [...state.filteredApplications, application]
-        }))
-      },
-
-      updateJobApplication: (id, updates) => {
-        set((state) => ({
-          jobApplications: state.jobApplications.map((app) =>
-            app.id === id ? { ...app, ...updates } : app
-          ),
-          filteredApplications: state.filteredApplications.map((app) =>
-            app.id === id ? { ...app, ...updates } : app
-          )
-        }))
-      },
-
-      deleteJobApplication: (id) => {
-        set((state) => ({
-          jobApplications: state.jobApplications.filter((app) => app.id !== id),
-          filteredApplications: state.filteredApplications.filter((app) => app.id !== id)
-        }))
-      },
-
-      // Generator actions
-      setGeneratorStep: (generatorStep) => set({ generatorStep }),
-      setJobAnalysis: (jobAnalysis) => set({ jobAnalysis }),
-      setResumeState: (resumeState) => set({ resumeState }),
-      setCurrentSection: (currentSection) => set({ currentSection }),
-      resetGenerator: () => set({ 
-        generatorStep: 'analysis',
-        jobAnalysis: null,
-        resumeState: defaultResumeState,
-        currentSection: 'summary'
-      })
-    }),
-    { 
-      name: 'resume-store',
-      partialize: (state) => ({
-        generatorStep: state.generatorStep,
-        jobAnalysis: state.jobAnalysis,
-        resumeState: state.resumeState,
-        currentSection: state.currentSection
-      })
-    }
-  ),
-  { name: 'resume-store' }
+      }),
+      { 
+        name: 'resume-store',
+        partialize: (state) => ({
+          generatorStep: state.generatorStep,
+          jobAnalysis: state.jobAnalysis,
+          resumeState: state.resumeState,
+          currentSection: state.currentSection
+        })
+      }
+    ),
+    { name: 'resume-store' }
+  )
 )
