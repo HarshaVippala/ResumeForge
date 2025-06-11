@@ -9,7 +9,7 @@
 *.db
 *.sqlite
 *.sqlite3
-
+*.
 # Logs
 *.log
 logs/
@@ -27,7 +27,9 @@ dist/
 downloads/
 eggs/
 .eggs/
+# Python lib/ directory (but allow frontend/src/lib/)
 lib/
+!frontend/src/lib/
 lib64/
 parts/
 sdist/
@@ -113,3 +115,6 @@ Screenshot*.png
 # Local configuration
 config/local.py
 local_settings.py
+backend/data/additional_experience_highlights.json
+backend/data/base_resume_profile.json
+backend/data/harsha_experiences_structured.json
