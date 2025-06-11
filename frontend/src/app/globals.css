@@ -1,55 +1,53 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Light mode - Professional colors with proper contrast */
+    /* Light mode - Modern minimalist palette */
     --background: 0 0% 100%;
-    --foreground: 220 13% 18%;
+    --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
-    --card-foreground: 220 13% 18%;
+    --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 13% 18%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 9% 46%;
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
-    --accent: 220 14% 96%;
-    --accent-foreground: 220 13% 18%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 221 83% 53%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
     --radius: 0.5rem;
   }
 
   .dark {
-    /* Dark mode - Based on Discord/GitHub patterns with 4.5:1+ contrast */
-    --background: 224 71% 4%;     /* Very dark blue-gray */
-    --foreground: 213 31% 91%;    /* Light gray text */
-    --card: 224 57% 8%;           /* Dark card background */
-    --card-foreground: 213 31% 91%; /* Light text on cards */
-    --popover: 224 57% 8%;
-    --popover-foreground: 213 31% 91%;
-    --primary: 217 91% 60%;       /* Bright blue accent */
-    --primary-foreground: 224 71% 4%;
-    --secondary: 215 28% 17%;     /* Darker secondary */
-    --secondary-foreground: 213 31% 91%;
-    --muted: 215 28% 17%;
-    --muted-foreground: 217 11% 65%; /* Muted text */
-    --accent: 215 28% 17%;
-    --accent-foreground: 213 31% 91%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 213 31% 91%;
-    --border: 215 28% 17%;        /* Subtle borders */
-    --input: 215 28% 17%;
-    --ring: 217 91% 60%;
+    /* Dark mode - Modern minimalist with rich contrast */
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
   }
 }
 
@@ -58,27 +56,74 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground min-h-screen;
+    @apply bg-background text-foreground min-h-screen font-google-sans;
   }
   html {
     @apply bg-background;
+  }
+  
+  /* Google Sans Font Typography Hierarchy */
+  h1 {
+    @apply font-bold text-2xl;        /* 700 - Main titles */
+  }
+  h2 {
+    @apply font-semibold text-xl;     /* 600 - Section headings */
+  }
+  h3 {
+    @apply font-semibold text-lg;     /* 600 - Subsection headings */
+  }
+  h4 {
+    @apply font-medium text-base;     /* 500 - Small headings */
+  }
+  
+  /* Text hierarchy */
+  .text-heading {
+    @apply font-semibold text-foreground;     /* 600 - Important text */
+  }
+  .text-label {
+    @apply font-medium text-foreground;       /* 500 - Labels, captions */
+  }
+  .text-body {
+    @apply font-normal text-foreground;       /* 400 - Body text */
+  }
+  .text-muted {
+    @apply font-light text-muted-foreground;  /* 300 - Subtle text */
+  }
+  .text-accent {
+    @apply font-medium text-accent-foreground; /* 500 - Accent text */
   }
 }
 
 @layer components {
   .section-card {
-    @apply bg-white rounded-lg border border-gray-200 p-6 shadow-sm;
+    @apply bg-card border border-border rounded-lg p-6 shadow-sm;
   }
   
   .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 font-medium py-2 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border font-medium py-2 px-4 rounded-lg transition-colors;
+  }
+  
+  .btn-outline {
+    @apply border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground font-medium py-2 px-4 rounded-lg transition-colors;
+  }
+  
+  .btn-gradient {
+    @apply bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white font-semibold py-2 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300;
   }
   
   .ats-terminal {
-    @apply bg-gray-900 text-green-400 font-mono text-sm p-4 rounded-lg;
+    @apply bg-muted text-emerald-400 font-mono text-sm p-4 rounded-lg border border-border;
   }
   
   .glass-card {
-    @apply backdrop-blur-sm bg-white/80 border border-white/20 shadow-lg;
+    @apply backdrop-blur-sm bg-card/80 border border-border/50 shadow-lg rounded-lg;
+  }
+  
+  .theme-transition {
+    @apply transition-colors duration-200 ease-in-out;
   }
 }

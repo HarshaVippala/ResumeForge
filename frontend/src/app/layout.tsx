@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-});
+// Google Sans font weights
+// 300: Light - for subtle text
+// 400: Regular - for body text  
+// 500: Medium - for labels, section titles
+// 600: SemiBold - for headings, important text
+// 700: Bold - for main titles, emphasis
 
 export const metadata: Metadata = {
   title: "Resume Builder - AI-Powered Resume Generation",
@@ -26,8 +27,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={inter.className} suppressHydrationWarning>
-      <body className="antialiased">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link 
+          href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@300;400;500;600;700&display=swap" 
+          rel="stylesheet" 
+        />
+      </head>
+      <body className="antialiased font-google-sans">
         <ThemeProvider
           defaultTheme="system"
           storageKey="resume-builder-theme"
