@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -25,6 +25,11 @@ interface ResumePreviewProps {
 
 export function ResumePreview({ resumeState, jobAnalysis, highlightKeywords = false }: ResumePreviewProps) {
   const [isGenerating, setIsGenerating] = useState(false)
+  const [documentUrl, setDocumentUrl] = useState<string | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewType, setPreviewType] = useState<string>('direct')
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false)
+  const [previewError, setPreviewError] = useState<string | null>(null)
 
   // Calculate ATS score based on keyword matches
   const calculateATSScore = () => {
@@ -56,6 +61,57 @@ export function ResumePreview({ resumeState, jobAnalysis, highlightKeywords = fa
     return 'text-red-600 bg-red-100'
   }
 
+  // Generate document preview for Google Docs viewer
+  const generatePreview = async () => {
+    if (!jobAnalysis?.session_id) {
+      setPreviewError('No session ID available. Please analyze the job description first.')
+      return
+    }
+
+    setIsLoadingPreview(true)
+    setPreviewError(null)
+
+    try {
+      const response = await fetch('http://localhost:5001/api/preview-document', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session_id: jobAnalysis.session_id,
+          sections: {
+            summary: resumeState.summary.current,
+            skills: resumeState.skills.current,
+            experience: resumeState.experience.current
+          },
+          template: 'placeholder_resume.docx'
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`Preview failed: ${response.status} ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      setDocumentUrl(data.document_url)
+      setPreviewUrl(data.preview_url || data.document_url)
+      setPreviewType(data.preview_type || 'direct')
+
+    } catch (err) {
+      console.error('Preview generation failed:', err)
+      setPreviewError(`Failed to generate preview: ${err instanceof Error ? err.message : 'Unknown error'}`)
+    }
+
+    setIsLoadingPreview(false)
+  }
+
+  // Auto-generate preview when data changes
+  useEffect(() => {
+    if (jobAnalysis?.session_id && (resumeState.summary.current || resumeState.skills.current || resumeState.experience.current)) {
+      generatePreview()
+    }
+  }, [resumeState.summary.current, resumeState.skills.current, resumeState.experience.current, jobAnalysis?.session_id])
+
   const handleGenerate = async () => {
     if (!jobAnalysis?.session_id) {
       alert('No session ID available. Please analyze the job description first.')
@@ -78,7 +134,7 @@ export function ResumePreview({ resumeState, jobAnalysis, highlightKeywords = fa
             skills: resumeState.skills.current,
             experience: resumeState.experience.current
           },
-          template: 'Harsha_Master.docx' // Use your actual resume template
+          template: 'placeholder_resume.docx'
         })
       })
 
@@ -124,7 +180,7 @@ export function ResumePreview({ resumeState, jobAnalysis, highlightKeywords = fa
   }
 
   return (
-    <div className="bg-white h-full overflow-y-auto">
+    <div className="bg-white h-full flex flex-col">
       {/* Simplified Header */}
       <div className="border-b p-4">
         <div className="flex items-center justify-between">
@@ -178,179 +234,131 @@ export function ResumePreview({ resumeState, jobAnalysis, highlightKeywords = fa
       </div>
 
       {/* Content */}
-      <div className="p-4">
-        <DocumentView
-          resumeState={resumeState}
-          jobAnalysis={jobAnalysis}
-          highlightKeywords={highlightKeywords}
-          highlightKeywordsInText={highlightKeywordsInText}
-        />
-      </div>
-    </div>
-  )
-}
-
-function DocumentView({
-  resumeState,
-  jobAnalysis,
-  highlightKeywords,
-  highlightKeywordsInText
-}: {
-  resumeState: ResumeState
-  jobAnalysis: JobAnalysis | null
-  highlightKeywords: boolean
-  highlightKeywordsInText: (text: string) => string
-}) {
-  return (
-    <div
-      className="max-w-xl mx-auto bg-white border border-gray-200 rounded-lg shadow-sm"
-      style={{
-        fontSize: '9px',
-        lineHeight: '1.2',
-        fontFamily: 'Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-        transform: 'scale(0.85)',
-        transformOrigin: 'top center',
-        marginBottom: '-10%'
-      }}
-    >
-      {/* Header - Matching your resume format */}
-      <div className="text-center border-b border-gray-400 pb-2 mb-3 px-4 pt-4">
-        <h1 className="text-lg font-bold text-gray-900 mb-1 tracking-wide">HARSHA VIPPALA</h1>
-        <div className="text-gray-700 text-xs">
-          <span className="text-blue-600">harsha.vippala1@gmail.com</span> •
-          <span className="mx-1">+1(909)620-7227</span> •
-          <span className="text-blue-600 mx-1">www.linkedin.com/in/harsha-vippala</span> •
-          <span className="text-blue-600 mx-1">www.github.com/HarshaVippala</span>
-        </div>
-      </div>
-
-      <div className="px-6 pb-6 space-y-4">
-        {/* Summary */}
-        <div>
-          <h2 className="text-sm font-bold text-gray-900 mb-2 border-b border-gray-400 pb-1">
-            SUMMARY
-          </h2>
-          <div
-            className="text-gray-800 text-xs leading-relaxed"
-            dangerouslySetInnerHTML={{
-              __html: highlightKeywords && resumeState.summary.current
-                ? highlightKeywordsInText(resumeState.summary.current as string)
-                : (resumeState.summary.current as string || 'Software engineer specializing in large-scale distributed systems, cloud-native backend infrastructure, and horizontally scalable architectures using Node.js, Python, and Go. Experienced in platform-agnostic system design and cross-functional collaboration to ship high-impact features across multi-cloud environments with measurable business impact.')
-            }}
-          />
-        </div>
-
-        {/* Skills */}
-        <div>
-          <h2 className="text-sm font-bold text-gray-900 mb-2 border-b border-gray-400 pb-1">
-            SKILLS
-          </h2>
-          <div className="text-gray-800 text-xs space-y-1">
-            {resumeState.skills.current && typeof resumeState.skills.current === 'string' ? (
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: highlightKeywords
-                    ? highlightKeywordsInText(resumeState.skills.current)
-                    : resumeState.skills.current
-                }}
-              />
-            ) : (
-              <div className="space-y-1">
-                <div><strong>Languages & Frameworks:</strong> Python, Node.js, TypeScript, Go, React.js, NestJS, Express.js, C++</div>
-                <div><strong>Cloud & DevOps:</strong> AWS, Google Cloud Platform, Pub/Sub, Kubernetes, Docker, Terraform, Protocol Buffers</div>
-                <div><strong>APIs & Integration:</strong> RESTful APIs, GraphQL, gRPC, API Gateway, Swagger/OpenAPI, Webhooks</div>
-                <div><strong>Architecture & Design:</strong> Microservices, Serverless, Distributed Systems, CAP Theorem, Auto Scaling, Parallel Computing</div>
-                <div><strong>Databases & Storage:</strong> MongoDB, DynamoDB, MySQL, PostgreSQL, Redis, Elasticsearch, Redshift</div>
-                <div><strong>Monitoring & Observability:</strong> New Relic, CloudWatch, Grafana, ELK, Open Telemetry</div>
-                <div><strong>Testing & CI/CD:</strong> Jest, Cypress, Jenkins, GitLab CI/CD, GitHub Actions</div>
-                <div><strong>Generative AI & ML:</strong> Vertex AI, AWS Bedrock, LMStudio, RAG, OpenAI APIs, LangGraph</div>
-                <div><strong>Certifications:</strong> Google Cloud Engineer, AWS AI Practitioner</div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Experience */}
-        <div>
-          <h2 className="text-sm font-bold text-gray-900 mb-2 border-b border-gray-400 pb-1">
-            EXPERIENCE
-          </h2>
-          <div className="space-y-3">
-            {resumeState.experience.current && typeof resumeState.experience.current === 'string' ? (
-              (() => {
-                try {
-                  const experiences = JSON.parse(resumeState.experience.current as string)
-                  return experiences.map((exp: any, index: number) => (
-                    <div key={index} className="mb-3">
-                      <div className="flex justify-between items-start mb-1">
-                        <div>
-                          <h3 className="font-bold text-gray-900 text-xs">{exp.role} | {exp.company}</h3>
-                          <p className="text-gray-700 text-xs">{exp.location}</p>
-                        </div>
-                        <p className="text-gray-700 text-xs font-medium">{exp.duration}</p>
-                      </div>
-                      <ul className="list-disc list-inside space-y-0.5 text-gray-800 text-xs ml-2">
-                        {exp.achievements?.map((achievement: string, achIndex: number) => (
-                          <li
-                            key={achIndex}
-                            dangerouslySetInnerHTML={{
-                              __html: highlightKeywords
-                                ? highlightKeywordsInText(achievement)
-                                : achievement
-                            }}
-                          />
-                        ))}
-                      </ul>
-                    </div>
-                  ))
-                } catch {
-                  return (
-                    <div className="space-y-3">
-                      <div className="mb-3">
-                        <div className="flex justify-between items-start mb-1">
-                          <div>
-                            <h3 className="font-bold text-gray-900 text-xs">Software Engineer II | 7-Eleven | Irving, TX</h3>
-                          </div>
-                          <p className="text-gray-700 text-xs font-medium">February 2024 – Present</p>
-                        </div>
-                        <ul className="list-disc list-inside space-y-0.5 text-gray-800 text-xs ml-2">
-                          <li>Led the design and scaling of Node.js serverless functions and API gateway patterns, supporting a mobile checkout platform processing $500K monthly sales with sub-2sec p99 latency for end-to-end flow.</li>
-                          <li>Integrated payment processing via Node.js and GraphQL, optimizing mobile order boosting mobile orders by 15%, with a focus on algorithms for tax exemption, split tender, and compliance-driven workflows.</li>
-                          <li>Delivered a Node.js IoT payment framework using TypeScript and event-driven patterns, reducing integration time by 30% while enabling consistent implementation across future workflows.</li>
-                        </ul>
-                      </div>
-                    </div>
-                  )
-                }
-              })()
-            ) : (
-              <p className="text-gray-500 italic text-xs">Work experience will appear here...</p>
-            )}
-          </div>
-        </div>
-
-        {/* Education */}
-        <div>
-          <h2 className="text-sm font-bold text-gray-900 mb-2 border-b border-gray-400 pb-1">
-            EDUCATION
-          </h2>
-          <div className="space-y-1">
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-bold text-gray-900 text-xs">Master of Science in Computer Engineering | New York University</h3>
-                <p className="text-gray-700 text-xs">New York, NY</p>
-              </div>
-              <p className="text-gray-700 text-xs">May 2021</p>
-            </div>
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-bold text-gray-900 text-xs">Bachelor of Technology in Computer Science & Engineering | K L University</h3>
-                <p className="text-gray-700 text-xs">Vijayawada, India</p>
-              </div>
-              <p className="text-gray-700 text-xs">May 2019</p>
+      <div className="flex-1 overflow-hidden">
+        {isLoadingPreview ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent mx-auto mb-4" />
+              <p className="text-gray-600">Generating document preview...</p>
             </div>
           </div>
-        </div>
+        ) : previewError ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-4" />
+              <p className="text-red-600 mb-4">{previewError}</p>
+              <Button onClick={generatePreview} variant="outline" size="sm">
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Retry Preview
+              </Button>
+            </div>
+          </div>
+        ) : previewUrl ? (
+          previewType === 'html' ? (
+            <div className="h-full flex flex-col">
+              {/* Preview header with actions */}
+              <div className="bg-gray-50 border-b p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Eye className="h-4 w-4" />
+                  Resume Preview
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => window.open(documentUrl, '_blank')}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1"
+                  >
+                    <FileText className="h-3 w-3" />
+                    Open Word
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      const link = document.createElement('a')
+                      link.href = documentUrl!
+                      link.download = `Resume_${new Date().toISOString().split('T')[0]}.docx`
+                      document.body.appendChild(link)
+                      link.click()
+                      document.body.removeChild(link)
+                    }}
+                    size="sm"
+                    className="flex items-center gap-1"
+                  >
+                    <Download className="h-3 w-3" />
+                    Download
+                  </Button>
+                </div>
+              </div>
+              
+              {/* HTML preview iframe */}
+              <div className="flex-1">
+                <iframe 
+                  src={previewUrl}
+                  width="100%" 
+                  height="100%"
+                  frameBorder="0"
+                  className="w-full h-full"
+                  title="Resume Preview"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center p-8">
+              <div className="max-w-md w-full bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+                <div className="text-center">
+                  <FileText className="h-16 w-16 text-blue-600 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Resume Generated Successfully</h3>
+                  <p className="text-gray-600 mb-6">Your resume has been generated with the latest content. Click below to view or download it.</p>
+                  
+                  <div className="space-y-3">
+                    <Button
+                      onClick={() => window.open(documentUrl, '_blank')}
+                      className="w-full flex items-center justify-center gap-2"
+                      size="lg"
+                    >
+                      <Eye className="h-4 w-4" />
+                      View Resume Document
+                    </Button>
+                    
+                    <Button
+                      onClick={() => {
+                        const link = document.createElement('a')
+                        link.href = documentUrl!
+                        link.download = `Resume_${new Date().toISOString().split('T')[0]}.docx`
+                        document.body.appendChild(link)
+                        link.click()
+                        document.body.removeChild(link)
+                      }}
+                      variant="outline"
+                      className="w-full flex items-center justify-center gap-2"
+                      size="lg"
+                    >
+                      <Download className="h-4 w-4" />
+                      Download Word Document
+                    </Button>
+                  </div>
+                  
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-xs text-blue-700">
+                      Document updates automatically when you modify any section
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <FileText className="h-8 w-8 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500 mb-4">No document preview available</p>
+              <Button onClick={generatePreview} variant="outline" size="sm">
+                <Eye className="h-4 w-4 mr-2" />
+                Generate Preview
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

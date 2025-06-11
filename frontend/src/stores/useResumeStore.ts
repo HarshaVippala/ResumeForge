@@ -44,6 +44,7 @@ interface ResumeStore {
   setResumeState: (state: ResumeState) => void
   setCurrentSection: (section: 'summary' | 'skills' | 'experience') => void
   resetGenerator: () => void
+  loadBaseResumeContent: () => Promise<void>
 }
 
 const defaultFilters: FilterOptions = {
@@ -248,7 +249,62 @@ export const useResumeStore = create<ResumeStore>()(
           jobAnalysis: null,
           resumeState: defaultResumeState,
           currentSection: 'summary'
-        })
+        }),
+
+        loadBaseResumeContent: async () => {
+          try {
+            const response = await fetch('http://localhost:5001/api/base-resume')
+            if (!response.ok) {
+              throw new Error(`Failed to load base resume: ${response.status}`)
+            }
+            
+            const data = await response.json()
+            if (!data.success) {
+              throw new Error('Failed to load base resume content')
+            }
+            
+            const baseResume = data.base_resume
+            
+            // Structure experience data for the preview component
+            const structuredExperience = baseResume.raw_experiences.map((job: any) => ({
+              company: job.company_name,
+              role: job.job_title,
+              location: job.location.replace(/[\[\]]/g, ''), // Remove brackets
+              duration: job.dates.replace(/[\[\]]/g, ''), // Remove brackets
+              achievements: job.experience_highlights
+            }))
+            
+            // Store the original experience bullets for editing
+            const originalExperienceBullets = baseResume.experience || []
+            
+            // Update resume state with base content
+            set((state) => ({
+              resumeState: {
+                summary: { 
+                  original: baseResume.summary, 
+                  current: baseResume.summary, 
+                  keywords: [], 
+                  status: 'pending' 
+                },
+                skills: { 
+                  original: baseResume.skills, 
+                  current: baseResume.skills, 
+                  keywords: [], 
+                  status: 'pending' 
+                },
+                experience: { 
+                  original: JSON.stringify(structuredExperience, null, 2), 
+                  current: JSON.stringify(structuredExperience, null, 2), 
+                  keywords: [], 
+                  status: 'pending' 
+                }
+              }
+            }))
+          } catch (error) {
+            console.error('Error loading base resume content:', error)
+            // Keep the default empty state if loading fails
+          }
+        }
       }),
       { 
         name: 'resume-store',

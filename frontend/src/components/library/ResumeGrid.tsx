@@ -18,12 +18,11 @@ import {
   Loader2,
   Plus,
   ChevronRight,
-  Clock,
   TrendingUp
 } from 'lucide-react'
 import Link from 'next/link'
 import type { Resume } from '@/types'
-import { formatDate, getATSScoreColor } from '@/lib/utils'
+import { getATSScoreColor } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
 interface ResumeGridProps {
@@ -76,16 +75,15 @@ function CompactResumeCard({ resume }: CompactResumeCardProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'offer': return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
+      case 'offer': return 'bg-emerald-500 text-white border border-emerald-600 shadow-sm'
       case 'technical-interview':
-      case 'onsite-interview': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
-      case 'phone-interview': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200'
-      case 'rejected': return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
-      case 'applied': return 'bg-secondary text-secondary-foreground'
-      default: return 'bg-secondary text-secondary-foreground'
+      case 'onsite-interview': return 'bg-blue-500 text-white border border-blue-600 shadow-sm'
+      case 'phone-interview': return 'bg-purple-500 text-white border border-purple-600 shadow-sm'
+      case 'rejected': return 'bg-red-500 text-white border border-red-600 shadow-sm'
+      case 'applied': return 'bg-gray-500 text-white border border-gray-600 shadow-sm'
+      default: return 'bg-gray-500 text-white border border-gray-600 shadow-sm'
     }
   }
-
 
   return (
     <Card className="group hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 bg-card border-border">
@@ -127,7 +125,7 @@ function CompactResumeCard({ resume }: CompactResumeCardProps) {
         {/* Status Indicator */}
         {resume.metadata.performance.applicationStatus && (
           <div className="mb-3">
-            <span className={`text-xs font-medium px-2 py-1 rounded ${getStatusColor(resume.metadata.performance.applicationStatus)}`}>
+            <span className={`text-xs font-semibold px-3 py-1.5 rounded-full ${getStatusColor(resume.metadata.performance.applicationStatus)}`}>
               {resume.metadata.performance.applicationStatus.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
             </span>
           </div>

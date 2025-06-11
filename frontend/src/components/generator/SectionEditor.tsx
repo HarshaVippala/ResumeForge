@@ -97,11 +97,45 @@ export function SectionEditor({
         throw new Error(data.error || 'Section generation failed')
       }
 
+      // Handle experience section specially - update just the bullets for the current job
+      let updatedContent = data.content
+      if (section === 'experience' && Array.isArray(data.content)) {
+        try {
+          // Parse existing experience structure
+          const existingExperience = typeof currentSectionData.current === 'string' 
+            ? JSON.parse(currentSectionData.current) 
+            : currentSectionData.current
+          
+          if (Array.isArray(existingExperience) && existingExperience.length > 0) {
+            // Update the first job's achievements with new generated bullets
+            const updatedExperience = [...existingExperience]
+            updatedExperience[0] = {
+              ...updatedExperience[0],
+              achievements: data.content
+            }
+            updatedContent = JSON.stringify(updatedExperience, null, 2)
+          } else {
+            // Fallback: create a basic structure if none exists
+            updatedContent = JSON.stringify([{
+              company: jobAnalysis?.job_info.company || 'Current Company',
+              role: jobAnalysis?.job_info.role || 'Software Engineer',
+              location: 'Location',
+              duration: 'Present',
+              achievements: data.content
+            }], null, 2)
+          }
+        } catch (error) {
+          console.error('Error updating experience structure:', error)
+          // Fallback to raw content
+          updatedContent = JSON.stringify(data.content, null, 2)
+        }
+      }
+
       const newResumeState = {
         ...resumeState,
         [section]: {
           ...currentSectionData,
-          current: data.content,
+          current: updatedContent,
           keywords: selectedKeywords,
           status: 'complete'
         }

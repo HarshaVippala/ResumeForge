@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { 
   RefreshCw, 
   Star,
@@ -85,25 +84,22 @@ export function ResumeLibraryHeader({
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <Sparkles className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold text-foreground">Resume Arsenal</h1>
+              <h1 className="text-3xl font-bold text-foreground">Resume Dump</h1>
             </div>
             <Badge variant="secondary" className="text-sm">
               {getDisplayCount()} resumes
             </Badge>
           </div>
-          <p className="text-gray-600 dark:text-gray-400">Your collection of tailored resumes, ready for battle</p>
         </div>
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
-          <ThemeToggle />
-          
           <Button variant="outline" onClick={handleRefresh} size="sm">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
           
-          <Button asChild className="group relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 border-0 px-6 py-3 text-white font-semibold overflow-hidden">
+          <Button asChild className="group relative btn-gradient overflow-hidden">
             <Link href="/dashboard/generator">
               <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
               <div className="relative flex items-center gap-2">

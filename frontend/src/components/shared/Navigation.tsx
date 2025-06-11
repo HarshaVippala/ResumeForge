@@ -15,19 +15,15 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/theme/theme-toggle'
+import { ServiceStatus } from '@/components/shared/ServiceStatus'
 
 const navigationItems = [
   {
-    name: 'Library',
-    href: '/dashboard/library',
-    icon: Library,
-    description: 'Browse and manage your resumes'
-  },
-  {
-    name: 'Generator',
-    href: '/dashboard/generator',
-    icon: Plus,
-    description: 'Create new tailored resumes'
+    name: 'Dashboard',
+    href: '/dashboard',
+    icon: BarChart3,
+    description: 'Your home dashboard'
   },
   {
     name: 'Job Tracker',
@@ -36,10 +32,16 @@ const navigationItems = [
     description: 'Track your job applications'
   },
   {
-    name: 'Analytics',
-    href: '/dashboard/analytics',
-    icon: BarChart3,
-    description: 'View performance insights'
+    name: 'Generator',
+    href: '/dashboard/generator',
+    icon: Plus,
+    description: 'Create new tailored resumes'
+  },
+  {
+    name: 'Library',
+    href: '/dashboard/library',
+    icon: Library,
+    description: 'Browse and manage your resumes'
   }
 ]
 
@@ -49,8 +51,8 @@ export function Navigation() {
 
   return (
     <nav className="bg-background border-b border-border sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
           {/* Logo and Brand */}
           <div className="flex items-center">
             <Link href="/dashboard" className="flex items-center space-x-3">
@@ -58,8 +60,7 @@ export function Navigation() {
                 <FileText className="h-5 w-5 text-white" />
               </div>
               <div className="flex flex-col">
-                <span className="text-lg font-bold text-foreground">Resume Builder</span>
-                <span className="text-xs text-muted-foreground hidden sm:block">AI-Powered Career Tools</span>
+                <span className="text-lg font-bold text-foreground">My Tracker</span>
               </div>
             </Link>
           </div>
@@ -86,8 +87,15 @@ export function Navigation() {
             })}
           </div>
 
-          {/* Right side - Settings and Mobile Menu */}
-          <div className="flex items-center space-x-4">
+          {/* Right side - Service Status, Theme Toggle, Settings and Mobile Menu */}
+          <div className="flex items-center space-x-2">
+            <ServiceStatus className="hidden md:flex" />
+            
+            {/* Separator */}
+            <div className="hidden md:block w-px h-4 bg-border mx-2" />
+            
+            <ThemeToggle />
+            
             <Button variant="ghost" size="icon" className="hidden md:flex">
               <Settings className="h-4 w-4" />
             </Button>
@@ -136,7 +144,17 @@ export function Navigation() {
               )
             })}
             
-            <div className="border-t border-border pt-2 mt-2">
+            <div className="border-t border-border pt-2 mt-2 space-y-1">
+              <div className="px-3 py-2">
+                <div className="text-sm font-medium text-muted-foreground mb-2">Services</div>
+                <ServiceStatus />
+              </div>
+              
+              <div className="flex items-center justify-between px-3 py-2">
+                <span className="text-base font-medium text-muted-foreground">Theme</span>
+                <ThemeToggle />
+              </div>
+              
               <Link
                 href="/dashboard/settings"
                 className="flex items-center px-3 py-2 rounded-md text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent"
