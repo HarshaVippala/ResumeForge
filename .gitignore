@@ -4,7 +4,13 @@
 .env.production
 .env.development
 *.env
+docs/
 
+# Gmail API credentials (sensitive)
+backend/config/gmail_credentials.json
+backend/config/gmail_token.json
+**/gmail_credentials.json
+**/gmail_token.json
 # Database files
 *.db
 *.sqlite
