@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from docx import Document
-from services.document_patcher import DocumentPatcher
+from .document_patcher import DocumentPatcher
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class TemplatePreviewService:
     """Generate preview content from template documents"""
     
     def __init__(self):
-        self.data_dir = Path(__file__).parent.parent / "data"
+        self.data_dir = Path(__file__).parent.parent.parent / "data"
         self.template_path = self.data_dir / "placeholder_resume.docx"
         self.base_resume_path = self.data_dir / "Harsha_Master.docx"
         self.document_patcher = DocumentPatcher()

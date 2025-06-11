@@ -58,8 +58,13 @@ class DocumentPatcher:
             doc = Document(template_path)
             doc = self._preprocess_document(doc)
             
-            # Create placeholder mapping from sections
-            placeholder_mapping = self._create_placeholder_mapping(sections, session_data)
+            # Apply aggressive 1-page optimization first
+            from .enhancers.space_optimizer import SpaceOptimizer
+            space_optimizer = SpaceOptimizer()
+            optimized_sections = space_optimizer.optimize_for_one_page(sections)
+            
+            # Create placeholder mapping from optimized sections
+            placeholder_mapping = self._create_placeholder_mapping(optimized_sections, session_data)
             
             # Extract placeholders from document
             placeholders = self._extract_placeholders(doc)
@@ -123,13 +128,61 @@ class DocumentPatcher:
                 for i, part in enumerate(skill_parts):
                     if ":" in part:
                         category, skills = part.split(":", 1)
+                        category_clean = category.strip()
+                        skills_clean = skills.strip()
+                        
+                        # Map to specific template placeholders
+                        if "Languages" in category_clean:
+                            mapping["SKILLS_LANGUAGESFRAMEWORK"] = skills_clean
+                        elif "Cloud" in category_clean:
+                            mapping["SKILLS_CLOUDDEVOPS"] = skills_clean
+                        elif "APIs" in category_clean:
+                            mapping["SKILLS_APISINTEGRATION"] = skills_clean
+                        elif "Architecture" in category_clean:
+                            mapping["SKILLS_ARCHITECTUREDESIGN"] = skills_clean
+                        elif "Databases" in category_clean:
+                            mapping["SKILLS_DATABASESSTORAGE"] = skills_clean
+                        elif "Monitoring" in category_clean:
+                            mapping["SKILLS_MONITORINGOBSERVABILITY"] = skills_clean
+                        elif "Testing" in category_clean:
+                            mapping["SKILLS_TESTINGCICD"] = skills_clean
+                        
+                        # Also keep the generic mapping as fallback
                         category_key = category.strip().upper().replace(" ", "_").replace("&", "")
-                        mapping[f"SKILLS_{category_key}"] = skills.strip()
+                        mapping[f"SKILLS_{category_key}"] = skills_clean
         
         # Experience bullets
         if "experience" in sections and isinstance(sections["experience"], list):
-            for i, bullet in enumerate(sections["experience"][:6]):  # Max 6 bullets
+            bullets = sections["experience"]
+            
+            # Map to specific job placeholders (JOB1, JOB2, JOB3)
+            for i, bullet in enumerate(bullets[:5]):  # Max 5 bullets for JOB1 (current position)
+                mapping[f"JOB1_POINT{i+1}"] = bullet
+            
+            # Generic mapping for backward compatibility
+            for i, bullet in enumerate(bullets[:6]):  # Max 6 bullets
                 mapping[f"EXPERIENCE_BULLET_{i+1}"] = bullet
+        
+        # Add content for JOB2 and JOB3 from structured experience data
+        from .resume_parser import ResumeParser
+        resume_parser = ResumeParser()
+        base_experiences = resume_parser.base_experiences
+        
+        if len(base_experiences) >= 2:
+            # JOB2 - Liberty Mutual Senior Software Engineer
+            job2_bullets = base_experiences[1].get('experience_highlights', [])
+            for i, bullet in enumerate(job2_bullets[:5]):
+                # Apply space optimization to fit format
+                optimized_bullet = self._optimize_bullet_for_space(bullet)
+                mapping[f"JOB2_POINT{i+1}"] = optimized_bullet
+        
+        if len(base_experiences) >= 3:
+            # JOB3 - Liberty Mutual Software Engineer  
+            job3_bullets = base_experiences[2].get('experience_highlights', [])
+            for i, bullet in enumerate(job3_bullets[:3]):  # Only 3 bullets for JOB3
+                # Apply space optimization to fit format
+                optimized_bullet = self._optimize_bullet_for_space(bullet)
+                mapping[f"JOB3_POINT{i+1}"] = optimized_bullet
         
         # Job context
         mapping["TARGET_COMPANY"] = session_data.get('company', '')
@@ -314,3 +367,76 @@ class DocumentPatcher:
                     templates.append(file)
         
         return templates
+    
+    def _optimize_bullet_for_space(self, bullet: str) -> str:
+        """Optimize bullet point for space constraints (1-page format)"""
+        
+        if len(bullet) <= 220:  # Target for 1-page format
+            return bullet
+        
+        # Apply common abbreviations and optimizations
+        optimized = bullet
+        
+        # Remove em-dashes first (user requirement)
+        optimized = optimized.replace('—', '-').replace('–', '-')
+        
+        # Technical abbreviations (ATS-safe only)
+        abbreviations = {
+            'JavaScript': 'JS',
+            'TypeScript': 'TS',
+            'Kubernetes': 'K8s',
+            # Removed risky abbreviations that ATS might not recognize:
+            # 'development': 'dev',  # ATS might not recognize
+            # 'implementation': 'impl',  # ATS might not recognize  
+            # 'optimization': 'opt',  # ATS might not recognize
+            # 'performance': 'perf',  # ATS might not recognize
+            # 'architecture': 'arch',  # ATS might not recognize
+        }
+        
+        for full, abbrev in abbreviations.items():
+            optimized = optimized.replace(full, abbrev)
+        
+        # Remove redundant phrases (more aggressive for 1-page)
+        redundant_phrases = [
+            'for the ',
+            'in order to ',
+            'was able to ',
+            'successfully ',
+            ' that ',
+            ' which ',
+            ' enabling ',
+            ' across ',
+            ' utilizing ',
+            ' demonstrating ',
+            ' including ',
+            ' approximately ',
+            ' through '
+        ]
+        
+        for phrase in redundant_phrases:
+            optimized = optimized.replace(phrase, ' ')
+        
+        # Replace common long phrases with shorter equivalents
+        phrase_replacements = [
+            (' resulting in ', ' achieving '),
+            (' contributing to ', ' boosting '),
+            (' implementing ', ' adding '),
+            (' over ', ' >'),
+            (' and ', ' & '),
+            (', ', ',')
+        ]
+        
+        for old, new in phrase_replacements:
+            optimized = optimized.replace(old, new)
+        
+        # Clean up extra spaces
+        optimized = ' '.join(optimized.split())
+        
+        # If still too long, truncate at word boundary (stricter for 1-page)
+        if len(optimized) > 220:
+            words = optimized.split()
+            while len(' '.join(words)) > 210 and words:  # Leave buffer
+                words.pop()
+            optimized = ' '.join(words)
+        
+        return optimized
