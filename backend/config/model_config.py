@@ -8,6 +8,13 @@ RECOMMENDED_MODEL = "deepseek/deepseek-r1-0528-qwen3-8b"
 
 # Model configurations optimized for different tasks using DeepSeek
 MODEL_CONFIGS = {
+    "email_extraction": {
+        "model": "qwen/qwen3-1.7b",
+        "max_tokens": 400,
+        "temperature": 0.1,  # Very low for structured extraction
+        "description": "Qwen 1.7B model for email information extraction"
+    },
+    
     "keyword_extraction": {
         "model": "deepseek/deepseek-r1-0528-qwen3-8b",
         "max_tokens": 1500,

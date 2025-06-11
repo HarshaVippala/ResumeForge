@@ -5,8 +5,8 @@ Analyzes job descriptions and extracts categorized keywords
 
 import logging
 from typing import Dict, List, Any, Optional
-from services.lm_studio_client import LMStudioClient
-from services.resume_parser import ResumeParser
+from .lm_studio_client import LMStudioClient
+from .resume.resume_parser import ResumeParser
 
 logger = logging.getLogger(__name__)
 
@@ -283,15 +283,25 @@ Focus on competitive positioning and actionable resume improvement strategies. R
     def _validate_extraction_result(self, result: Dict[str, Any]) -> bool:
         """Validate that AI extraction result has required strategic structure"""
         if not isinstance(result, dict):
+            logger.warning("Result is not a dictionary")
             return False
+
+        # Log what keys we actually received for debugging
+        actual_keys = list(result.keys())
+        logger.info(f"AI response keys: {actual_keys}")
 
         # Check for new strategic schema structure
         required_keys = ["strategic_positioning", "requirement_criticality", "technical_skills", "ats_optimization", "resume_guidance"]
 
+        missing_keys = []
         for key in required_keys:
             if key not in result:
+                missing_keys.append(key)
                 logger.warning(f"Missing required key: {key}")
-                return False
+        
+        if missing_keys:
+            logger.error(f"Missing keys: {missing_keys}. Available keys: {actual_keys}")
+            return False
 
         # Validate strategic_positioning structure
         positioning = result.get("strategic_positioning", {})

@@ -17,7 +17,8 @@ class LMStudioClient:
     def __init__(self, base_url: str = "http://localhost:1234"):
         self.base_url = base_url
         self.headers = {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer lm-studio'  # LM Studio API key as per docs
         }
         self.timeout = 300  # 5 minutes timeout for high-quality analysis
         self.model_name = "deepseek/deepseek-r1-0528-qwen3-8b"  # DeepSeek R1 reasoning model for highest quality strategic analysis
@@ -28,20 +29,12 @@ class LMStudioClient:
         """Test if LM Studio server is available"""
         try:
             response = requests.get(
-                f"{self.base_url}/health", 
+                f"{self.base_url}/v1/models",
                 timeout=5
             )
             return response.status_code == 200
         except requests.exceptions.RequestException:
-            # Try alternative health check
-            try:
-                response = requests.get(
-                    f"{self.base_url}/v1/models",
-                    timeout=5
-                )
-                return response.status_code == 200
-            except requests.exceptions.RequestException:
-                return False
+            return False
     
     def get_available_models(self) -> list:
         """Get list of available models in LM Studio"""
@@ -240,6 +233,12 @@ class LMStudioClient:
             # Clean up response and try to extract JSON
             cleaned_response = response.strip()
             
+            # Remove DeepSeek thinking tags first (these contain the reasoning process)
+            if "<think>" in cleaned_response and "</think>" in cleaned_response:
+                # Extract content after </think> tag
+                think_end = cleaned_response.find("</think>")
+                cleaned_response = cleaned_response[think_end + 8:].strip()
+            
             # Remove markdown code block formatting if present
             if cleaned_response.startswith("```json"):
                 cleaned_response = cleaned_response[7:]
@@ -250,9 +249,14 @@ class LMStudioClient:
             
             cleaned_response = cleaned_response.strip()
             
+            # Log the cleaned response for debugging
+            logger.info(f"Cleaned AI response: {cleaned_response[:300]}...")
+            
             # Try to parse as JSON
             try:
-                return json.loads(cleaned_response)
+                parsed_json = json.loads(cleaned_response)
+                logger.info(f"Successfully parsed JSON with keys: {list(parsed_json.keys()) if isinstance(parsed_json, dict) else 'Not a dict'}")
+                return parsed_json
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse JSON response: {e}")
                 logger.error(f"Raw response: {cleaned_response[:500]}...")
