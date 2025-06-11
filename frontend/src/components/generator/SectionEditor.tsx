@@ -27,7 +27,7 @@ interface SectionEditorProps {
   setResumeState: (state: ResumeState) => void
   setCurrentSection: (section: 'summary' | 'skills' | 'experience') => void
   jobAnalysis: JobAnalysis | null
-  onCreateVersion?: (description: string, changes: any[]) => void
+  onCreateVersion?: (resumeState: ResumeState, description: string, changes: any[]) => void
 }
 
 export function SectionEditor({
@@ -112,6 +112,7 @@ export function SectionEditor({
       // Create version history entry
       if (onCreateVersion) {
         onCreateVersion(
+          newResumeState,
           `AI optimized ${section} section`,
           [{
             section,
@@ -133,7 +134,7 @@ export function SectionEditor({
 
       switch (section) {
         case 'summary':
-          fallbackContent = `Results-driven ${jobAnalysis?.job_info.seniority || 'Senior'} Software Engineer with 5+ years of experience in ${keywords?.technical_skills.slice(0, 3).join(', ')}. Proven track record of delivering scalable solutions and leading cross-functional teams. Expert in ${keywords?.critical_keywords.slice(0, 2).join(' and ')}, with strong ${keywords?.soft_skills.slice(0, 2).join(' and ')} skills.`
+          fallbackContent = `Results-driven ${jobAnalysis?.job_info.seniority || 'Senior'} Software Engineer with 5+ years of experience in ${keywords?.technical_skills.slice(0, 3).join(', ')}. Proven track record of delivering scalable solutions and leading cross-functional teams. Expert in ${jobAnalysis?.critical_keywords.slice(0, 2).join(' and ')}, with strong ${keywords?.soft_skills.slice(0, 2).join(' and ')} skills.`
           break
         case 'skills':
           fallbackContent = [
@@ -301,7 +302,7 @@ export function SectionEditor({
               <div className="flex gap-1">
                 <button
                   onClick={() => {
-                    const criticalSkills = keywords.critical_keywords || [];
+                    const criticalSkills = jobAnalysis?.critical_keywords || [];
                     const topTechSkills = keywords.technical_skills?.slice(0, 6) || [];
                     setSelectedKeywords([...criticalSkills, ...topTechSkills]);
                   }}
@@ -310,7 +311,7 @@ export function SectionEditor({
                   Auto
                 </button>
                 <button
-                  onClick={() => setSelectedKeywords(keywords.critical_keywords || [])}
+                  onClick={() => setSelectedKeywords(jobAnalysis?.critical_keywords || [])}
                   className="px-2 py-1 bg-gray-50 text-gray-700 rounded text-xs font-medium hover:bg-gray-100 transition-colors"
                 >
                   Essential
@@ -327,7 +328,7 @@ export function SectionEditor({
             {/* Skill Categories */}
             <div className="space-y-2">
               {/* Critical Keywords */}
-              {keywords.critical_keywords && keywords.critical_keywords.length > 0 && (
+              {jobAnalysis?.critical_keywords && jobAnalysis.critical_keywords.length > 0 && (
                 <div className="bg-white rounded-lg border border-gray-200 p-3">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-xs font-semibold text-gray-900 uppercase tracking-wide">Essential</h4>
@@ -335,7 +336,7 @@ export function SectionEditor({
                   </div>
                   
                   <div className="flex flex-wrap gap-1">
-                    {keywords.critical_keywords.map((keyword, index) => (
+                    {jobAnalysis?.critical_keywords.map((keyword, index) => (
                       <button
                         key={`critical-${index}-${keyword}`}
                         onClick={() => toggleKeyword(keyword)}

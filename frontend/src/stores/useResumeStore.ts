@@ -197,8 +197,8 @@ export const useResumeStore = create<ResumeStore>()(
                 break
             }
 
-            if (aValue < bValue) return sort.direction === 'asc' ? -1 : 1
-            if (aValue > bValue) return sort.direction === 'asc' ? 1 : -1
+            if ((aValue as any) < (bValue as any)) return sort.direction === 'asc' ? -1 : 1
+            if ((aValue as any) > (bValue as any)) return sort.direction === 'asc' ? 1 : -1
             return 0
           })
 

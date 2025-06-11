@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { useResumeStore } from '@/stores/useResumeStore'
 import { cn } from '@/lib/utils'
+import type { JobType } from '@/types'
 
 // Refined job types (only 4 main categories)
 const jobTypes = [
@@ -89,7 +90,7 @@ export function ResumeFilters({ isExpanded }: ResumeFiltersProps) {
     setFilters({ search: value })
   }
 
-  const toggleJobType = (jobType: string) => {
+  const toggleJobType = (jobType: JobType) => {
     const currentTypes = filters.jobTypes || []
     const newTypes = currentTypes.includes(jobType)
       ? currentTypes.filter(type => type !== jobType)
@@ -214,12 +215,12 @@ export function ResumeFilters({ isExpanded }: ResumeFiltersProps) {
               <div className="flex flex-wrap gap-2">
                 {jobTypes.map((type) => {
                   const Icon = type.icon
-                  const isSelected = filters.jobTypes?.includes(type.value) || false
+                  const isSelected = filters.jobTypes?.includes(type.value as JobType) || false
                   
                   return (
                     <button
                       key={type.value}
-                      onClick={() => toggleJobType(type.value)}
+                      onClick={() => toggleJobType(type.value as JobType)}
                       className={cn(
                         "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-all",
                         isSelected
