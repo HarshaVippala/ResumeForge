@@ -1,0 +1,208 @@
+{
+  "type": "object",
+  "properties": {
+    "strategic_positioning": {
+      "type": "object",
+      "properties": {
+        "target_seniority": {
+          "type": "string",
+          "description": "Junior/Mid/Senior/Staff/Principal based on requirements"
+        },
+        "role_specialization": {
+          "type": "string", 
+          "description": "Frontend/Backend/Full-stack/DevOps/Mobile/Data/etc"
+        },
+        "industry_focus": {
+          "type": "string",
+          "description": "Domain expertise required (fintech, healthcare, crypto, etc)"
+        },
+        "experience_level": {
+          "type": "string",
+          "description": "X+ years experience requirement"
+        },
+        "scale_context": {
+          "type": "string",
+          "description": "Startup/Enterprise/Scale indicators"
+        }
+      },
+      "required": ["target_seniority", "role_specialization", "industry_focus", "experience_level", "scale_context"]
+    },
+    "requirement_criticality": {
+      "type": "object",
+      "properties": {
+        "deal_breakers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "skill": {"type": "string"},
+              "evidence": {"type": "string", "description": "Why this skill is critical"},
+              "frequency": {"type": "integer", "description": "Times mentioned in JD"}
+            },
+            "required": ["skill", "evidence", "frequency"]
+          }
+        },
+        "competitive_edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "skill": {"type": "string"},
+              "advantage": {"type": "string", "description": "Why this skill differentiates candidates"}
+            },
+            "required": ["skill", "advantage"]
+          }
+        },
+        "nice_to_haves": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "skill": {"type": "string"},
+              "value": {"type": "string", "description": "Bonus value this skill provides"}
+            },
+            "required": ["skill", "value"]
+          }
+        }
+      },
+      "required": ["deal_breakers", "competitive_edges", "nice_to_haves"]
+    },
+    "technical_skills": {
+      "type": "object",
+      "properties": {
+        "programming_languages": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "frameworks_libraries": {
+          "type": "array", 
+          "items": {"type": "string"}
+        },
+        "databases": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "cloud_devops": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "ai_ml": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "tools_platforms": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "methodologies": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      },
+      "required": ["programming_languages", "frameworks_libraries", "databases", "cloud_devops", "ai_ml", "tools_platforms", "methodologies"]
+    },
+    "ats_optimization": {
+      "type": "object",
+      "properties": {
+        "critical_keywords": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "term": {"type": "string"},
+              "variations": {
+                "type": "array",
+                "items": {"type": "string"}
+              },
+              "weight": {
+                "type": "string",
+                "enum": ["critical", "important", "standard"]
+              }
+            },
+            "required": ["term", "variations", "weight"]
+          }
+        },
+        "exact_matches_required": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Terms that must be precise matches"
+        },
+        "keyword_density_targets": {
+          "type": "object",
+          "additionalProperties": {"type": "integer"},
+          "description": "Skill name to frequency mentioned mapping"
+        }
+      },
+      "required": ["critical_keywords", "exact_matches_required", "keyword_density_targets"]
+    },
+    "resume_guidance": {
+      "type": "object",
+      "properties": {
+        "skills_emphasis": {
+          "type": "object",
+          "properties": {
+            "primary_focus": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Top 3-5 skills to highlight prominently"
+            },
+            "secondary_mention": {
+              "type": "array", 
+              "items": {"type": "string"},
+              "description": "Skills to include but not emphasize"
+            },
+            "omit_or_minimize": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Skills to avoid highlighting"
+            }
+          },
+          "required": ["primary_focus", "secondary_mention", "omit_or_minimize"]
+        },
+        "experience_positioning": {
+          "type": "object",
+          "properties": {
+            "lead_with": {
+              "type": "string",
+              "description": "Primary experience type to feature"
+            },
+            "highlight_projects": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Types of projects to emphasize"
+            },
+            "scale_indicators": {
+              "type": "array",
+              "items": {"type": "string"}, 
+              "description": "What scale/complexity to mention"
+            }
+          },
+          "required": ["lead_with", "highlight_projects", "scale_indicators"]
+        },
+        "gap_mitigation": {
+          "type": "object",
+          "properties": {
+            "missing_critical": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Skills clearly required but potentially missing"
+            },
+            "learning_priorities": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Skills to acquire for competitiveness"
+            },
+            "compensation_strategies": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "How to address gaps with existing experience"
+            }
+          },
+          "required": ["missing_critical", "learning_priorities", "compensation_strategies"]
+        }
+      },
+      "required": ["skills_emphasis", "experience_positioning", "gap_mitigation"]
+    }
+  },
+  "required": ["strategic_positioning", "requirement_criticality", "technical_skills", "ats_optimization", "resume_guidance"]
+}

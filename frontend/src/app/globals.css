@@ -1,0 +1,187 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode - Modern minimalist palette */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Dark mode - Material Design 3 compliant with proper elevation and contrast */
+    /* Base surface - #121212 Material Design recommendation */
+    --background: 0 0% 7%;
+    --foreground: 0 0% 87%; /* 87% opacity for primary text */
+    
+    /* Elevated surfaces with proper Material Design elevation */
+    --card: 0 0% 12%; /* ~#1e1e1e for elevated cards */
+    --card-foreground: 0 0% 87%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 0 0% 87%;
+    
+    /* Primary colors - modern blue accent */
+    --primary: 212 100% 70%; /* Modern blue for dark mode */
+    --primary-foreground: 0 0% 7%;
+    
+    /* Secondary surfaces */
+    --secondary: 0 0% 16%; /* Slightly elevated surface */
+    --secondary-foreground: 0 0% 87%;
+    
+    /* Muted elements */
+    --muted: 0 0% 14%; /* Subtle background variation */
+    --muted-foreground: 0 0% 60%; /* 60% opacity for secondary text */
+    
+    /* Accent elements */
+    --accent: 0 0% 16%;
+    --accent-foreground: 0 0% 87%;
+    
+    /* Error states */
+    --destructive: 0 86% 65%; /* Softer red for dark mode */
+    --destructive-foreground: 0 0% 87%;
+    
+    /* Borders and inputs */
+    --border: 0 0% 24%; /* Subtle borders on dark surfaces */
+    --input: 0 0% 16%; /* Input background */
+    --ring: 212 100% 70%; /* Focus ring matches primary */
+    
+    /* Material Design elevation levels */
+    --elevation-1: 0 0% 10%; /* 1dp elevation */
+    --elevation-2: 0 0% 12%; /* 2dp elevation */
+    --elevation-3: 0 0% 14%; /* 3dp elevation */
+    --elevation-4: 0 0% 16%; /* 4dp elevation */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground min-h-screen font-google-sans;
+  }
+  html {
+    @apply bg-background;
+  }
+  
+  /* Google Sans Font Typography Hierarchy */
+  h1 {
+    @apply font-bold text-2xl;        /* 700 - Main titles */
+  }
+  h2 {
+    @apply font-semibold text-xl;     /* 600 - Section headings */
+  }
+  h3 {
+    @apply font-semibold text-lg;     /* 600 - Subsection headings */
+  }
+  h4 {
+    @apply font-medium text-base;     /* 500 - Small headings */
+  }
+  
+  /* Text hierarchy */
+  .text-heading {
+    @apply font-semibold text-foreground;     /* 600 - Important text */
+  }
+  .text-label {
+    @apply font-medium text-foreground;       /* 500 - Labels, captions */
+  }
+  .text-body {
+    @apply font-normal text-foreground;       /* 400 - Body text */
+  }
+  .text-muted {
+    @apply font-light text-muted-foreground;  /* 300 - Subtle text */
+  }
+  .text-accent {
+    @apply font-medium text-accent-foreground; /* 500 - Accent text */
+  }
+}
+
+@layer components {
+  .section-card {
+    @apply bg-card border border-border rounded-lg p-6 shadow-sm;
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 font-medium py-2 px-4 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border font-medium py-2 px-4 rounded-lg transition-colors;
+  }
+  
+  .btn-outline {
+    @apply border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground font-medium py-2 px-4 rounded-lg transition-colors;
+  }
+  
+  .btn-gradient {
+    @apply bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white font-semibold py-2 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+  
+  .ats-terminal {
+    @apply bg-muted text-emerald-400 font-mono text-sm p-4 rounded-lg border border-border;
+  }
+  
+  .glass-card {
+    @apply backdrop-blur-sm bg-card/80 border border-border/50 shadow-lg rounded-lg;
+  }
+  
+  .theme-transition {
+    @apply transition-colors duration-200 ease-in-out;
+  }
+  
+  /* Material Design dark mode enhancements */
+  .elevation-card {
+    @apply bg-elevation-2 shadow-lg;
+  }
+  
+  .elevated-surface {
+    @apply bg-elevation-1;
+  }
+  
+  /* Dark mode specific improvements */
+  .dark .section-card {
+    @apply bg-elevation-2 border-border shadow-2xl;
+  }
+  
+  .dark .glass-card {
+    @apply backdrop-blur-sm bg-elevation-1/90 border-border/30 shadow-2xl;
+  }
+  
+  /* Dark mode navigation improvements */
+  .dark .nav-bg {
+    @apply bg-elevation-1 border-border/20;
+  }
+  
+  /* Dark mode input improvements */
+  .dark input[type="text"],
+  .dark input[type="email"],
+  .dark input[type="password"],
+  .dark textarea,
+  .dark select {
+    @apply bg-elevation-1 border-border text-foreground placeholder:text-muted-foreground;
+  }
+  
+  /* Dark mode hover states */
+  .dark .hover-lift:hover {
+    @apply bg-elevation-3 shadow-xl transform -translate-y-0.5;
+  }
+}

@@ -1,0 +1,113 @@
+# Environment variables and configuration
+.env
+.env.local
+.env.production
+.env.development
+*.env
+
+# Sensitive credential files
+**/gmail_credentials.json
+**/gmail_token.json
+**/credentials.json
+**/token.json
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Log files
+*.log
+logs/
+**/*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Next.js
+.next/
+out/
+build/
+
+# Production builds
+dist/
+build/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Output files
+output/
+temp/
+tmp/
+
+# Personal documents (except placeholder)
+backend/data/Harsha_Master.docx
+backend/data/harsha_experiences_structured.json
+backend/data/additional_experience_highlights.json
+backend/data/base_resume_profile.json
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Cache directories
+.cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temporary files
+*.tmp
+*.temp
