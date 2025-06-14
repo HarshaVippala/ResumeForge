@@ -12,7 +12,7 @@ import {
   DollarSign
 } from 'lucide-react'
 
-interface JobTrackerStatsProps {
+interface ApplicationPipelineStatsProps {
   stats: {
     total: number
     active: number
@@ -22,9 +22,8 @@ interface JobTrackerStatsProps {
   }
 }
 
-export function JobTrackerStats({ stats }: JobTrackerStatsProps) {
+export function ApplicationPipelineStats({ stats }: ApplicationPipelineStatsProps) {
   const conversionRate = stats.total > 0 ? Math.round((stats.interviews / stats.total) * 100) : 0
-  const offerRate = stats.interviews > 0 ? Math.round((stats.offers / stats.interviews) * 100) : 0
   
   const statCards = [
     {
@@ -32,61 +31,38 @@ export function JobTrackerStats({ stats }: JobTrackerStatsProps) {
       value: stats.total.toString(),
       icon: Briefcase,
       color: 'text-blue-600 bg-blue-100',
-      trend: '+12% this month'
+      description: 'All applications'
     },
     {
       title: 'Active Pipeline',
       value: stats.active.toString(),
       icon: Target,
       color: 'text-green-600 bg-green-100',
-      trend: `${stats.active} in progress`
+      description: 'In progress'
     },
     {
       title: 'Interview Rate',
       value: `${conversionRate}%`,
       icon: Users,
       color: 'text-purple-600 bg-purple-100',
-      trend: `${stats.interviews} interviews`
-    },
-    {
-      title: 'Offer Rate',
-      value: `${offerRate}%`,
-      icon: Trophy,
-      color: 'text-yellow-600 bg-yellow-100',
-      trend: `${stats.offers} offers received`
-    },
-    {
-      title: 'Avg Response Time',
-      value: stats.avgResponseTime > 0 ? `${stats.avgResponseTime}d` : 'N/A',
-      icon: Clock,
-      color: 'text-indigo-600 bg-indigo-100',
-      trend: 'Industry: 7-14d'
-    },
-    {
-      title: 'This Week',
-      value: '3',
-      icon: Calendar,
-      color: 'text-orange-600 bg-orange-100',
-      trend: '2 applications, 1 interview'
+      description: `${stats.interviews} interviews`
     }
   ]
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {statCards.map((stat, index) => (
         <Card key={index} className="hover:shadow-md transition-shadow">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-3">
               <div className={`p-2 rounded-lg ${stat.color}`}>
-                <stat.icon className="h-4 w-4" />
+                <stat.icon className="h-5 w-5" />
               </div>
-              <TrendingUp className="h-4 w-4 text-gray-400" />
-            </div>
-            
-            <div className="space-y-1">
-              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-              <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-              <p className="text-xs text-gray-500">{stat.trend}</p>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                <p className="text-sm font-medium text-gray-600">{stat.title}</p>
+                <p className="text-xs text-gray-500">{stat.description}</p>
+              </div>
             </div>
           </CardContent>
         </Card>

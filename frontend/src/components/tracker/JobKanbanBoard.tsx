@@ -19,7 +19,9 @@ import {
   ArrowRight,
   CheckCircle,
   AlertCircle,
-  Plus
+  Plus,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
 import type { JobApplication, ApplicationStatus } from '@/types'
 import { formatDate } from '@/lib/utils'
@@ -31,56 +33,75 @@ interface JobKanbanBoardProps {
 
 interface KanbanColumnProps {
   title: string
-  status: ApplicationStatus
-  applications: JobApplication[]
+  status: ApplicationStatus | 'interview'
+  applications: (JobApplication & { status: ApplicationStatus | 'interview' })[]
   count: number
   color: string
 }
 
-const kanbanColumns = [
+const pipelineColumns = [
   {
     status: 'applied' as ApplicationStatus,
     title: 'Applied',
     color: 'bg-blue-50 border-blue-200',
-    headerColor: 'text-blue-700 bg-blue-100'
+    headerColor: 'text-blue-700 bg-blue-100',
+    cardType: 'compact' as const
   },
   {
     status: 'screening' as ApplicationStatus,
     title: 'Screening',
     color: 'bg-yellow-50 border-yellow-200',
-    headerColor: 'text-yellow-700 bg-yellow-100'
+    headerColor: 'text-yellow-700 bg-yellow-100',
+    cardType: 'standard' as const
   },
   {
     status: 'phone-interview' as ApplicationStatus,
     title: 'Phone Interview',
     color: 'bg-purple-50 border-purple-200',
-    headerColor: 'text-purple-700 bg-purple-100'
+    headerColor: 'text-purple-700 bg-purple-100',
+    cardType: 'standard' as const
   },
   {
-    status: 'technical-interview' as ApplicationStatus,
-    title: 'Technical',
+    status: 'interview' as 'interview', // Virtual status combining technical + onsite
+    title: 'Interview',
     color: 'bg-indigo-50 border-indigo-200',
-    headerColor: 'text-indigo-700 bg-indigo-100'
-  },
-  {
-    status: 'onsite-interview' as ApplicationStatus,
-    title: 'Onsite',
-    color: 'bg-orange-50 border-orange-200',
-    headerColor: 'text-orange-700 bg-orange-100'
-  },
-  {
-    status: 'offer' as ApplicationStatus,
-    title: 'Offer',
-    color: 'bg-green-50 border-green-200',
-    headerColor: 'text-green-700 bg-green-100'
-  },
-  {
-    status: 'rejected' as ApplicationStatus,
-    title: 'Rejected',
-    color: 'bg-red-50 border-red-200',
-    headerColor: 'text-red-700 bg-red-100'
+    headerColor: 'text-indigo-700 bg-indigo-100',
+    cardType: 'standard' as const
   }
 ]
+
+function CompactApplicationCard({ application }: { application: JobApplication }) {
+  const daysSinceApplication = Math.floor(
+    (Date.now() - new Date(application.applicationDate).getTime()) / (1000 * 60 * 60 * 24)
+  )
+
+  return (
+    <Card className="group hover:shadow-md transition-all duration-200 cursor-pointer bg-white border-l-2 border-l-blue-500">
+      <CardContent className="p-3">
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-medium text-gray-900 truncate">
+                {application.company}
+              </div>
+              <div className="text-xs text-gray-600 truncate">
+                {application.role}
+              </div>
+            </div>
+            {daysSinceApplication > 14 && (
+              <div className="flex-shrink-0 ml-2">
+                <div className="w-2 h-2 bg-yellow-400 rounded-full" title="Application over 14 days old" />
+              </div>
+            )}
+          </div>
+          <div className="text-xs text-gray-500">
+            Applied {daysSinceApplication}d ago
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
 function ApplicationCard({ application }: { application: JobApplication }) {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -197,7 +218,13 @@ function ApplicationCard({ application }: { application: JobApplication }) {
 
         {/* Quick Actions */}
         <div className="flex items-center gap-2 pt-2 border-t">
-          <Button size="sm" variant="outline" className="flex-1 h-7 text-xs">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="flex-1 h-7 text-xs" 
+            disabled 
+            title="Notes functionality coming soon"
+          >
             <MessageSquare className="h-3 w-3 mr-1" />
             Notes
           </Button>
@@ -210,12 +237,18 @@ function ApplicationCard({ application }: { application: JobApplication }) {
             </Button>
           )}
           
-          <Button size="sm" variant="outline" className="h-7 px-2">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="h-7 px-2" 
+            disabled 
+            title="Move application functionality coming soon"
+          >
             <ArrowRight className="h-3 w-3" />
           </Button>
         </div>
 
-        {/* Resume Link */}
+        {/* Resume Link - only show if resumeId exists */}
         {application.resumeId && (
           <div className="text-xs text-blue-600">
             <Link href={`/dashboard/library?resume=${application.resumeId}`} className="hover:underline">
@@ -228,8 +261,8 @@ function ApplicationCard({ application }: { application: JobApplication }) {
   )
 }
 
-function KanbanColumn({ title, status, applications, count, color }: KanbanColumnProps) {
-  const columnApps = applications.filter(app => app.status === status)
+function KanbanColumn({ title, status, applications, count, color, cardType }: KanbanColumnProps & { cardType: 'compact' | 'standard' }) {
+  const columnApps = applications.filter(app => app.status === status as any)
 
   return (
     <div className="flex flex-col min-h-0">
@@ -257,7 +290,11 @@ function KanbanColumn({ title, status, applications, count, color }: KanbanColum
           </div>
         ) : (
           columnApps.map(app => (
-            <ApplicationCard key={app.id} application={app} />
+            cardType === 'compact' ? (
+              <CompactApplicationCard key={app.id} application={app} />
+            ) : (
+              <ApplicationCard key={app.id} application={app} />
+            )
           ))
         )}
       </div>
@@ -266,11 +303,30 @@ function KanbanColumn({ title, status, applications, count, color }: KanbanColum
 }
 
 export function JobKanbanBoard({ applications }: JobKanbanBoardProps) {
-  // Calculate counts for each status
-  const statusCounts = kanbanColumns.reduce((acc, column) => {
-    acc[column.status] = applications.filter(app => app.status === column.status).length
+  // Filter applications into active pipeline and rejected applications
+  const activeApplications = applications.filter(app => 
+    ['applied', 'screening', 'phone-interview', 'technical-interview', 'onsite-interview'].includes(app.status)
+  )
+  
+  const rejectedApplications = applications.filter(app => 
+    ['rejected', 'withdrawn'].includes(app.status)
+  )
+  
+  // Transform interview statuses for display
+  const transformedActiveApplications = activeApplications.map(app => ({
+    ...app,
+    status: (['technical-interview', 'onsite-interview'].includes(app.status) ? 'interview' : app.status) as ApplicationStatus | 'interview'
+  }))
+  
+  // Calculate counts for each column
+  const statusCounts = pipelineColumns.reduce((acc, column) => {
+    if (column.status === 'interview') {
+      acc[column.status] = transformedActiveApplications.filter(app => app.status === 'interview' as any).length
+    } else {
+      acc[column.status] = transformedActiveApplications.filter(app => app.status === column.status).length
+    }
     return acc
-  }, {} as Record<ApplicationStatus, number>)
+  }, {} as Record<string, number>)
 
   return (
     <div className="space-y-4">
@@ -284,22 +340,101 @@ export function JobKanbanBoard({ applications }: JobKanbanBoardProps) {
         </div>
       </div>
 
-      {/* Kanban Board */}
+      {/* Main Pipeline */}
       <div className="overflow-x-auto">
         <div className="flex gap-4 min-w-max pb-4">
-          {kanbanColumns.map(column => (
+          {pipelineColumns.map(column => (
             <div key={column.status} className="w-80 flex-shrink-0">
               <KanbanColumn
                 title={column.title}
                 status={column.status}
-                applications={applications}
+                applications={transformedActiveApplications as any}
                 count={statusCounts[column.status] || 0}
                 color={column.color}
+                cardType={column.cardType}
               />
             </div>
           ))}
         </div>
       </div>
+      
+      {/* Rejected Applications Section */}
+      {rejectedApplications.length > 0 && (
+        <RejectedApplicationsSection applications={rejectedApplications} />
+      )}
     </div>
+  )
+}
+
+function RejectedApplicationsSection({ applications }: { applications: JobApplication[] }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const showPreview = 2 // Show 2 most recent rejections
+  const recentRejected = applications.slice(0, showPreview)
+  const remainingCount = Math.max(0, applications.length - showPreview)
+
+  return (
+    <div className="border-t pt-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-medium text-gray-900">
+          Rejected Applications ({applications.length})
+        </h3>
+        {remainingCount > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            {isExpanded ? (
+              <>
+                <ChevronUp className="h-4 w-4 mr-1" />
+                Show less
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-4 w-4 mr-1" />
+                +{remainingCount} more
+              </>
+            )}
+          </Button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        {/* Always show recent rejections */}
+        {recentRejected.map(app => (
+          <RejectedApplicationCard key={app.id} application={app} />
+        ))}
+        
+        {/* Show remaining when expanded */}
+        {isExpanded && applications.slice(showPreview).map(app => (
+          <RejectedApplicationCard key={app.id} application={app} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function RejectedApplicationCard({ application }: { application: JobApplication }) {
+  const daysSinceRejection = Math.floor(
+    (Date.now() - new Date(application.applicationDate).getTime()) / (1000 * 60 * 60 * 24)
+  )
+
+  return (
+    <Card className="opacity-75 hover:opacity-90 transition-opacity cursor-pointer bg-gray-50 border-l-2 border-l-red-500">
+      <CardContent className="p-3">
+        <div className="space-y-1">
+          <div className="text-sm font-medium text-gray-700 truncate">
+            {application.company}
+          </div>
+          <div className="text-xs text-gray-600 truncate">
+            {application.role}
+          </div>
+          <div className="text-xs text-gray-500">
+            Rejected {daysSinceRejection}d ago
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

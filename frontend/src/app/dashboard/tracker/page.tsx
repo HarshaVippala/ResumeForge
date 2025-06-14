@@ -1,252 +1,58 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { JobTrackerHeader } from '@/components/tracker/JobTrackerHeader'
-import { JobTrackerStats } from '@/components/tracker/JobTrackerStats'
+import { useState, useEffect, useMemo } from 'react'
+import { ApplicationPipelineHeader } from '@/components/tracker/JobTrackerHeader'
+import { ApplicationPipelineStats } from '@/components/tracker/JobTrackerStats'
 import { JobKanbanBoard } from '@/components/tracker/JobKanbanBoard'
-import { JobTrackerFilters } from '@/components/tracker/JobTrackerFilters'
-import { useResumeStore } from '@/stores/useResumeStore'
+import { useJobApplications } from '@/hooks/useJobApplications'
 import type { JobApplication, ApplicationStatus } from '@/types'
+import type { QuickAddFormData } from '@/components/tracker/QuickAddModal'
 
-// Mock data for demonstration
-const mockJobApplications: JobApplication[] = [
-  {
-    id: '1',
-    company: 'Google',
-    role: 'Senior Software Engineer',
-    department: 'Search',
-    salaryRange: '$180K - $250K',
-    location: 'Mountain View, CA',
-    workType: 'hybrid',
-    applicationDate: '2024-01-16',
-    jobPostingUrl: 'https://careers.google.com/jobs/123',
-    status: 'technical-interview',
-    resumeId: '1',
-    contacts: [
-      {
-        id: '1',
-        name: 'Sarah Chen',
-        role: 'Engineering Manager',
-        email: 'sarah.chen@google.com',
-        notes: 'First round interviewer'
-      }
-    ],
-    applicationMethod: 'company-website',
-    timeline: [
-      {
-        id: '1',
-        date: '2024-01-16',
-        type: 'application',
-        title: 'Application Submitted',
-        description: 'Applied through Google Careers portal'
-      },
-      {
-        id: '2',
-        date: '2024-01-18',
-        type: 'email',
-        title: 'Recruiter Response',
-        description: 'Initial screening call scheduled'
-      },
-      {
-        id: '3',
-        date: '2024-01-20',
-        type: 'interview',
-        title: 'Phone Screening',
-        description: 'Technical phone screen with Sarah Chen',
-        status: 'technical-interview'
-      }
-    ],
-    notes: 'Strong technical match. Focus on system design experience.',
-    nextAction: 'Prepare for system design interview',
-    nextActionDate: '2024-01-25',
-    metadata: {
-      industry: 'technology',
-      companySize: '10000+',
-      responseTime: 2,
-      lastActivity: '2024-01-20'
-    }
-  },
-  {
-    id: '2',
-    company: 'Netflix',
-    role: 'Full Stack Developer',
-    department: 'Platform',
-    salaryRange: '$160K - $220K',
-    location: 'Los Gatos, CA',
-    workType: 'remote',
-    applicationDate: '2024-01-13',
-    status: 'phone-interview',
-    resumeId: '2',
-    contacts: [],
-    applicationMethod: 'linkedin',
-    timeline: [
-      {
-        id: '1',
-        date: '2024-01-13',
-        type: 'application',
-        title: 'Application Submitted',
-        description: 'Applied via LinkedIn'
-      },
-      {
-        id: '2',
-        date: '2024-01-15',
-        type: 'email',
-        title: 'HR Contact',
-        description: 'Initial HR screening scheduled'
-      }
-    ],
-    notes: 'Streaming platform experience highlighted.',
-    nextAction: 'Follow up on interview scheduling',
-    nextActionDate: '2024-01-22',
-    metadata: {
-      industry: 'technology',
-      companySize: '5000-10000',
-      responseTime: 2,
-      lastActivity: '2024-01-15'
-    }
-  },
-  {
-    id: '3',
-    company: 'Stripe',
-    role: 'Backend Engineer',
-    department: 'Payments',
-    salaryRange: '$170K - $240K',
-    location: 'San Francisco, CA',
-    workType: 'hybrid',
-    applicationDate: '2024-01-11',
-    status: 'offer',
-    resumeId: '3',
-    contacts: [
-      {
-        id: '1',
-        name: 'Alex Thompson',
-        role: 'Senior Engineer',
-        email: 'alex@stripe.com'
-      }
-    ],
-    applicationMethod: 'recruiter-email',
-    timeline: [
-      {
-        id: '1',
-        date: '2024-01-11',
-        type: 'application',
-        title: 'Application Submitted'
-      },
-      {
-        id: '2',
-        date: '2024-01-12',
-        type: 'interview',
-        title: 'Technical Interview',
-        status: 'offer'
-      },
-      {
-        id: '3',
-        date: '2024-01-19',
-        type: 'offer',
-        title: 'Offer Received',
-        description: 'Competitive offer with equity package'
-      }
-    ],
-    notes: 'Excellent technical fit. Strong offer received.',
-    nextAction: 'Review offer details and negotiate',
-    nextActionDate: '2024-01-26',
-    metadata: {
-      industry: 'finance',
-      companySize: '1000-5000',
-      responseTime: 1,
-      lastActivity: '2024-01-19'
-    }
-  },
-  {
-    id: '4',
-    company: 'Microsoft',
-    role: 'Principal Software Engineer',
-    salaryRange: '$200K - $280K',
-    location: 'Seattle, WA',
-    workType: 'hybrid',
-    applicationDate: '2024-01-08',
-    status: 'rejected',
-    resumeId: '1',
-    contacts: [],
-    applicationMethod: 'company-website',
-    timeline: [
-      {
-        id: '1',
-        date: '2024-01-08',
-        type: 'application',
-        title: 'Application Submitted'
-      },
-      {
-        id: '2',
-        date: '2024-01-17',
-        type: 'rejection',
-        title: 'Application Declined',
-        description: 'Position filled internally'
-      }
-    ],
-    notes: 'Position filled internally. Consider reapplying in 6 months.',
-    metadata: {
-      industry: 'technology',
-      companySize: '10000+',
-      responseTime: 9,
-      lastActivity: '2024-01-17'
-    }
-  },
-  {
-    id: '5',
-    company: 'Airbnb',
-    role: 'Senior Frontend Engineer',
-    location: 'San Francisco, CA',
-    workType: 'remote',
-    applicationDate: '2024-01-20',
-    status: 'applied',
-    contacts: [],
-    applicationMethod: 'company-website',
-    timeline: [
-      {
-        id: '1',
-        date: '2024-01-20',
-        type: 'application',
-        title: 'Application Submitted'
-      }
-    ],
-    notes: 'Waiting for initial response.',
-    nextAction: 'Follow up if no response by Jan 27',
-    nextActionDate: '2024-01-27',
-    metadata: {
-      industry: 'technology',
-      companySize: '5000-10000',
-      lastActivity: '2024-01-20'
-    }
-  }
-]
-
-export default function JobTrackerPage() {
-  const { jobApplications, setJobApplications } = useResumeStore()
+export default function ApplicationPipelinePage() {
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban')
-  const [isLoading, setIsLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  
+  // Use the real job applications hook
+  const {
+    applications: jobApplications,
+    stats,
+    isLoading,
+    error,
+    lastUpdated,
+    refreshApplications,
+    updateApplicationStatus
+  } = useJobApplications()
 
-  useEffect(() => {
-    // Simulate loading data
-    setTimeout(() => {
-      setJobApplications(mockJobApplications)
-      setIsLoading(false)
-    }, 1000)
-  }, [setJobApplications])
+  // Filter applications based on search query
+  const filteredApplications = useMemo(() => {
+    if (!searchQuery.trim()) return jobApplications
+    
+    const query = searchQuery.toLowerCase()
+    return jobApplications.filter(app => 
+      app.company.toLowerCase().includes(query) ||
+      app.role.toLowerCase().includes(query)
+    )
+  }, [jobApplications, searchQuery])
 
-  const stats = {
-    total: jobApplications.length,
-    active: jobApplications.filter(app => !['rejected', 'accepted', 'withdrawn'].includes(app.status)).length,
-    interviews: jobApplications.filter(app => app.status.includes('interview')).length,
-    offers: jobApplications.filter(app => app.status === 'offer').length,
-    avgResponseTime: jobApplications.length > 0 
-      ? Math.round(
-          jobApplications
-            .filter(app => app.metadata.responseTime)
-            .reduce((acc, app) => acc + (app.metadata.responseTime || 0), 0) /
-          jobApplications.filter(app => app.metadata.responseTime).length
-        )
-      : 0
+  // Handle adding new application
+  const handleAddApplication = async (data: QuickAddFormData) => {
+    try {
+      // For now, we'll just show a placeholder since we need to implement the backend endpoint
+      console.log('Adding application:', data)
+      
+      // TODO: Implement API call to add application
+      // const response = await fetch('/api/applications', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(data)
+      // })
+      
+      // Refresh applications after adding
+      await refreshApplications()
+    } catch (error) {
+      console.error('Failed to add application:', error)
+      throw error
+    }
   }
 
   if (isLoading) {
@@ -265,18 +71,40 @@ export default function JobTrackerPage() {
     )
   }
 
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center py-12">
+          <h2 className="text-xl font-semibold text-red-600 mb-2">Error Loading Applications</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={refreshApplications}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
-      <JobTrackerHeader 
+      <ApplicationPipelineHeader 
         viewMode={viewMode} 
         onViewModeChange={setViewMode}
         stats={stats}
+        onRefresh={refreshApplications}
+        lastUpdated={lastUpdated}
+        isRefreshing={isLoading}
+        onAddApplication={handleAddApplication}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
       />
-      <JobTrackerStats stats={stats} />
-      <JobTrackerFilters />
+      <ApplicationPipelineStats stats={stats} />
       
       {viewMode === 'kanban' ? (
-        <JobKanbanBoard applications={jobApplications} />
+        <JobKanbanBoard applications={filteredApplications} />
       ) : (
         <div className="text-center py-12 text-gray-500">
           List view coming soon...

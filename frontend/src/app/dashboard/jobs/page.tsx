@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { 
   Search,
   MapPin,
@@ -22,6 +24,8 @@ import {
   Star,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Play,
   Settings
 } from 'lucide-react'
@@ -33,21 +37,22 @@ import type { Job, JobFilters } from '@/services/backgroundJobScraper'
 
 type ViewMode = 'all' | 'remote' | 'recent' | 'saved'
 
+const JOBS_PER_PAGE = 10
+
 export default function JobsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [viewMode, setViewMode] = useState<ViewMode>('all')
   const [isFilterExpanded, setIsFilterExpanded] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
+  const [isJobDetailsOpen, setIsJobDetailsOpen] = useState(false)
+  const [generatingResumes, setGeneratingResumes] = useState<Set<string>>(new Set())
   const [filters, setFilters] = useState<JobFilters>({})
   const [sortBy, setSortBy] = useState('date_posted')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [timeFilter, setTimeFilter] = useState<string | null>(null)
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false)
-  const [loadedJobs, setLoadedJobs] = useState<Job[]>([])
   const sortDropdownRef = useRef<HTMLDivElement>(null)
-  const loadMoreRef = useRef<HTMLDivElement>(null)
-  const [isInfiniteScrollEnabled, setIsInfiniteScrollEnabled] = useState(true)
 
   // Use job scraper hook
   const {
@@ -75,8 +80,22 @@ export default function JobsPage() {
 
   // Load initial jobs on component mount
   useEffect(() => {
-    loadJobs(1, 20, {}, sortBy, sortOrder)
-  }, [])
+    console.log('JobsPage mounted, loading initial jobs...')
+    loadJobs(1, JOBS_PER_PAGE, {}, 'date_posted', 'desc').then(() => {
+      console.log('Initial jobs loaded:', jobs?.length || 0, 'jobs')
+    })
+  }, []) // Empty dependency array - only run once on mount
+
+  // Debug: Log when jobs change
+  useEffect(() => {
+    console.log('Jobs data updated:', {
+      jobsCount: jobs?.length || 0,
+      firstJob: jobs?.[0],
+      status,
+      error,
+      isLoading
+    })
+  }, [jobs, status, error, isLoading])
 
   // Click outside handler for sort dropdown
   useEffect(() => {
@@ -92,74 +111,62 @@ export default function JobsPage() {
     }
   }, [isSortDropdownOpen])
 
-  // Update loaded jobs when jobs change
-  useEffect(() => {
-    if (currentPage === 1) {
-      setLoadedJobs(jobs)
-    } else {
-      // Append new jobs for pagination
-      setLoadedJobs(prev => {
-        const existingIds = new Set(prev.map(job => job.id))
-        const newJobs = jobs.filter(job => !existingIds.has(job.id))
-        return [...prev, ...newJobs]
-      })
+  // Filter jobs older than 5 days
+  const filteredJobs = useMemo(() => {
+    let filtered = jobs || []
+    
+    // Filter out jobs older than 5 days
+    const fiveDaysAgo = new Date()
+    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5)
+    
+    filtered = filtered.filter(job => {
+      const jobDate = job.date_posted ? new Date(job.date_posted) : new Date(job.scraped_at)
+      return !isNaN(jobDate.getTime()) && jobDate >= fiveDaysAgo
+    })
+
+    // Apply view mode filter
+    switch (viewMode) {
+      case 'remote':
+        filtered = filtered.filter(job => job.remote)
+        break
+      case 'recent':
+        const oneDayAgo = new Date()
+        oneDayAgo.setDate(oneDayAgo.getDate() - 1)
+        filtered = filtered.filter(job => {
+          const jobDate = job.date_posted ? new Date(job.date_posted) : new Date(job.scraped_at)
+          return !isNaN(jobDate.getTime()) && jobDate >= oneDayAgo
+        })
+        break
     }
-  }, [jobs, currentPage])
 
-  // Infinite scroll observer
-  useEffect(() => {
-    if (!isInfiniteScrollEnabled || !loadMoreRef.current || isLoading || !pagination?.has_next) {
-      return
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(job => 
+        job.title.toLowerCase().includes(query) ||
+        job.company.toLowerCase().includes(query) ||
+        job.location.toLowerCase().includes(query) ||
+        job.skills.some(skill => skill.toLowerCase().includes(query))
+      )
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          const nextPage = currentPage + 1
-          setCurrentPage(nextPage)
-          
-          const searchFilters = { ...filters }
-          if (searchQuery.trim()) {
-            searchFilters.search = searchQuery
-          }
-          if (timeFilter) {
-            const now = new Date()
-            let filterDate = new Date()
-            
-            switch (timeFilter) {
-              case 'past_hour':
-                filterDate.setHours(now.getHours() - 1)
-                break
-              case 'past_6_hours':
-                filterDate.setHours(now.getHours() - 6)
-                break
-              case 'past_24_hours':
-                filterDate.setDate(now.getDate() - 1)
-                break
-              case 'past_week':
-                filterDate.setDate(now.getDate() - 7)
-                break
-            }
-            
-            searchFilters.date_posted = filterDate.toISOString()
-          }
-          
-          loadJobs(nextPage, 20, searchFilters, sortBy, sortOrder)
-        }
-      },
-      {
-        rootMargin: '100px',
-        threshold: 0.1
-      }
-    )
+    return filtered
+  }, [jobs, viewMode, searchQuery])
 
-    observer.observe(loadMoreRef.current)
-    return () => observer.disconnect()
-  }, [currentPage, isLoading, pagination?.has_next, filters, searchQuery, timeFilter, sortBy, sortOrder, isInfiniteScrollEnabled])
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredJobs.length / JOBS_PER_PAGE)
+  const startIndex = (currentPage - 1) * JOBS_PER_PAGE
+  const endIndex = startIndex + JOBS_PER_PAGE
+  const currentJobs = filteredJobs.slice(startIndex, endIndex)
 
-  // Reload jobs when sort or time filter changes
+  // Reset to page 1 when filters change
   useEffect(() => {
-    const effectiveFilters = { ...filters }
+    setCurrentPage(1)
+  }, [viewMode, searchQuery, timeFilter, sortBy, sortOrder])
+
+  // Helper function to create effective filters
+  const createEffectiveFilters = useCallback(() => {
+    const baseFilters = { ...filters }
     
     // Apply time filter
     if (timeFilter) {
@@ -181,74 +188,105 @@ export default function JobsPage() {
           break
       }
       
-      effectiveFilters.date_posted = filterDate.toISOString()
+      baseFilters.date_posted = filterDate.toISOString()
     }
     
-    loadJobs(1, 20, effectiveFilters, sortBy, sortOrder)
-    setCurrentPage(1)
-    setLoadedJobs([]) // Clear loaded jobs when filters change
-  }, [sortBy, sortOrder, timeFilter])
+    return baseFilters
+  }, [filters, timeFilter])
 
-  // Filter jobs based on view mode and search
-  const filteredJobs = useMemo(() => {
-    let filtered = loadedJobs
-
-    // Apply view mode filter
-    switch (viewMode) {
-      case 'remote':
-        filtered = filtered.filter(job => job.remote)
-        break
-      case 'recent':
-        const oneDayAgo = new Date()
-        oneDayAgo.setDate(oneDayAgo.getDate() - 1)
-        filtered = filtered.filter(job => new Date(job.date_posted) >= oneDayAgo)
-        break
-    }
-
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(job => 
-        job.title.toLowerCase().includes(query) ||
-        job.company.toLowerCase().includes(query) ||
-        job.location.toLowerCase().includes(query) ||
-        job.skills.some(skill => skill.toLowerCase().includes(query))
-      )
-    }
-
-    return filtered
-  }, [loadedJobs, viewMode, searchQuery])
-
-  // Manual refresh handler
+  // Manual refresh handler with better error handling
   const handleManualRefresh = async () => {
     try {
       await manualScrape()
     } catch (error) {
       console.error('Manual scraping failed:', error)
+      // The error will be shown in the UI via the hasError state from useJobScraper
     }
   }
 
-  // Smooth scroll to top utility
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    })
+  // Job details modal handler
+  const handleJobClick = (job: Job, event: React.MouseEvent) => {
+    if ((event.target as HTMLElement).closest('.job-actions')) {
+      return
+    }
+    setSelectedJob(job)
+    setIsJobDetailsOpen(true)
+  }
+
+  // Background resume generation handler
+  const handleTailorResume = async (job: Job, event: React.MouseEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    
+    const jobId = job.job_id
+    setGeneratingResumes(prev => new Set([...prev, jobId]))
+    
+    try {
+      const response = await fetch('http://localhost:5001/api/analyze-job', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          company: job.company,
+          role: job.title,
+          jobDescription: job.description,
+          jobUrl: job.application_url
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        console.log('Resume generation started for:', job.title, 'at', job.company)
+        
+        if (result.session_id) {
+          window.open(`/dashboard/generator?sessionId=${result.session_id}`, '_blank')
+        }
+      } else {
+        throw new Error('Failed to start resume generation')
+      }
+    } catch (error) {
+      console.error('Resume generation failed:', error)
+    } finally {
+      setGeneratingResumes(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(jobId)
+        return newSet
+      })
+    }
   }
 
   // Handle job search with filters
-  const handleSearch = async () => {
-    const searchFilters = {
-      ...filters,
-      search: searchQuery
-    }
+  const handleSearch = () => {
+    const effectiveFilters = createEffectiveFilters()
+    effectiveFilters.search = searchQuery
     
-    // Apply time filter if active
-    if (timeFilter) {
+    loadJobs(1, 50, effectiveFilters, sortBy, sortOrder) // Load more for client-side filtering
+    setCurrentPage(1)
+  }
+
+  // Handle sort change
+  const handleSortChange = (newSortBy: string, newSortOrder: 'asc' | 'desc') => {
+    setSortBy(newSortBy)
+    setSortOrder(newSortOrder)
+    setIsSortDropdownOpen(false)
+    
+    const effectiveFilters = createEffectiveFilters()
+    loadJobs(1, 50, effectiveFilters, newSortBy, newSortOrder)
+  }
+
+  // Handle time filter change
+  const handleTimeFilterChange = (filter: string) => {
+    const newTimeFilter = timeFilter === filter ? null : filter
+    setTimeFilter(newTimeFilter)
+    
+    const baseFilters = { ...filters }
+    
+    if (newTimeFilter) {
       const now = new Date()
       let filterDate = new Date()
       
-      switch (timeFilter) {
+      switch (newTimeFilter) {
         case 'past_hour':
           filterDate.setHours(now.getHours() - 1)
           break
@@ -263,26 +301,10 @@ export default function JobsPage() {
           break
       }
       
-      searchFilters.date_posted = filterDate.toISOString()
+      baseFilters.date_posted = filterDate.toISOString()
     }
     
-    await loadJobs(1, 20, searchFilters, sortBy, sortOrder)
-    setCurrentPage(1)
-    scrollToTop()
-  }
-
-  // Handle sort change
-  const handleSortChange = (newSortBy: string, newSortOrder: 'asc' | 'desc') => {
-    setSortBy(newSortBy)
-    setSortOrder(newSortOrder)
-    setIsSortDropdownOpen(false)
-    scrollToTop()
-  }
-
-  // Handle time filter change
-  const handleTimeFilterChange = (filter: string) => {
-    setTimeFilter(timeFilter === filter ? null : filter)
-    scrollToTop()
+    loadJobs(1, 50, baseFilters, sortBy, sortOrder)
   }
 
   // Get sort display text
@@ -296,7 +318,6 @@ export default function JobsPage() {
   // Handle saving a job
   const handleSaveJob = async (jobId: string) => {
     try {
-      // You might want to get user email from a user context/store
       await saveJob(jobId, 'user@example.com', 'Saved from job search')
     } catch (error) {
       console.error('Failed to save job:', error)
@@ -359,6 +380,83 @@ export default function JobsPage() {
     }
   }
 
+  // Pagination component
+  const PaginationControls = () => {
+    if (totalPages <= 1) return null
+
+    const pageNumbers = []
+    const maxVisiblePages = 5
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2))
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1)
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1)
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i)
+    }
+
+    return (
+      <div className="flex items-center justify-center gap-2 mt-6">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+          disabled={currentPage === 1}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+
+        {startPage > 1 && (
+          <>
+            <Button
+              variant={currentPage === 1 ? "default" : "outline"}
+              size="sm"
+              onClick={() => setCurrentPage(1)}
+            >
+              1
+            </Button>
+            {startPage > 2 && <span className="px-2">...</span>}
+          </>
+        )}
+
+        {pageNumbers.map(num => (
+          <Button
+            key={num}
+            variant={currentPage === num ? "default" : "outline"}
+            size="sm"
+            onClick={() => setCurrentPage(num)}
+          >
+            {num}
+          </Button>
+        ))}
+
+        {endPage < totalPages && (
+          <>
+            {endPage < totalPages - 1 && <span className="px-2">...</span>}
+            <Button
+              variant={currentPage === totalPages ? "default" : "outline"}
+              size="sm"
+              onClick={() => setCurrentPage(totalPages)}
+            >
+              {totalPages}
+            </Button>
+          </>
+        )}
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+          disabled={currentPage === totalPages}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -372,22 +470,14 @@ export default function JobsPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setIsInfiniteScrollEnabled(!isInfiniteScrollEnabled)}
-              className={cn("h-9", isInfiniteScrollEnabled ? "bg-primary/10 border-primary/20" : "")}
-              title={isInfiniteScrollEnabled ? "Disable infinite scroll" : "Enable infinite scroll"}
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Auto-load
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
               onClick={handleManualRefresh}
               disabled={isLoading}
               className="h-9"
             >
               <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
-              {isLoading ? 'Scraping...' : 'Refresh Jobs'}
+              {isLoading ? (
+                status === 'scraping' ? 'Scraping jobs...' : 'Loading...'
+              ) : 'Refresh Jobs'}
             </Button>
           </div>
         </div>
@@ -492,6 +582,12 @@ export default function JobsPage() {
         </div>
       </div>
 
+      {/* Job Stats */}
+      <div className="text-sm text-muted-foreground">
+        Showing {startIndex + 1}-{Math.min(endIndex, filteredJobs.length)} of {filteredJobs.length} jobs
+        {filteredJobs.length < (jobs?.length || 0) && ` (filtered from ${jobs?.length || 0} total)`}
+      </div>
+
       {/* Job List */}
       <div className="space-y-4">
         {hasError ? (
@@ -504,7 +600,7 @@ export default function JobsPage() {
               </Button>
             </div>
           </Card>
-        ) : isLoading ? (
+        ) : isLoading && jobs.length === 0 ? (
           <div className="space-y-4">
             {[...Array(5)].map((_, i) => (
               <Card key={i} className="p-6">
@@ -524,19 +620,22 @@ export default function JobsPage() {
               </Card>
             ))}
           </div>
-        ) : filteredJobs.length > 0 ? (
-          <div className="max-w-4xl">
-            <div className="space-y-3" style={{ minHeight: '200px' }}>
-              <AnimatePresence>
-                {filteredJobs.map((job, index) => (
+        ) : currentJobs.length > 0 ? (
+          <div className="w-full">
+            <div className="space-y-3">
+              <AnimatePresence mode="wait">
+                {currentJobs.map((job, index) => (
                   <motion.div
-                    key={job.id}
+                    key={`${job.id}-${currentPage}`}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.3, delay: index * 0.05 }}
                   >
-                    <Card className="p-4 hover:shadow-md hover:border-primary/20 transition-all duration-200 cursor-pointer group">
+                    <Card 
+                      className="p-4 hover:shadow-md hover:border-primary/20 transition-all duration-200 cursor-pointer group"
+                      onClick={(e) => handleJobClick(job, e)}
+                    >
                       <div className="flex justify-between items-start">
                         <div className="flex-1 min-w-0 mr-4">
                           {/* Header Row */}
@@ -569,13 +668,13 @@ export default function JobsPage() {
                             )}
                             <div className="flex items-center gap-1">
                               <Calendar className="h-3.5 w-3.5" />
-                              <span className="text-xs">{formatJobDate(job.date_posted)}</span>
+                              <span className="text-xs">{formatJobDate(job.date_posted || job.scraped_at)}</span>
                             </div>
                           </div>
 
                           {/* Description */}
-                          <p className="text-sm text-muted-foreground mb-3 line-clamp-2 leading-relaxed">
-                            {job.description_preview || job.description?.substring(0, 150) + '...'}
+                          <p className="text-sm text-muted-foreground mb-3 line-clamp-3 leading-relaxed">
+                            {job.description_preview || job.description?.substring(0, 300) + '...'}
                           </p>
 
                           {/* Skills */}
@@ -596,11 +695,21 @@ export default function JobsPage() {
                         </div>
 
                         {/* Right Side Actions */}
-                        <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                        <div className="flex flex-col items-end gap-2 flex-shrink-0 job-actions">
                           {/* Experience Level */}
                           <Badge className={cn("text-xs h-6 px-2", getExperienceLevelColor(job.experience_level))}>
                             {job.experience_level}
                           </Badge>
+
+                          {/* Salary */}
+                          {(job.salary_min || job.salary_max) && (
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <DollarSign className="h-3.5 w-3.5" />
+                              <span className="text-xs">
+                                {formatSalary(job.salary_min ?? null, job.salary_max ?? null, job.salary_currency)}
+                              </span>
+                            </div>
+                          )}
 
                           {/* Actions */}
                           <div className="flex gap-2">
@@ -622,13 +731,21 @@ export default function JobsPage() {
                             </Button>
                             <Button
                               size="sm"
-                              asChild
+                              onClick={(e) => handleTailorResume(job, e)}
+                              disabled={generatingResumes.has(job.job_id)}
                               className="h-8 px-3 flex items-center gap-1.5"
                             >
-                              <Link href={`/dashboard/generator?jobId=${job.job_id}&company=${encodeURIComponent(job.company)}&title=${encodeURIComponent(job.title)}`} className="flex items-center gap-1.5">
-                                <Play className="h-3.5 w-3.5" />
-                                <span className="text-xs font-medium">Tailor Resume</span>
-                              </Link>
+                              {generatingResumes.has(job.job_id) ? (
+                                <>
+                                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                  <span className="text-xs font-medium">Generating...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="h-3.5 w-3.5" />
+                                  <span className="text-xs font-medium">Tailor Resume</span>
+                                </>
+                              )}
                             </Button>
                           </div>
                         </div>
@@ -639,90 +756,8 @@ export default function JobsPage() {
               </AnimatePresence>
             </div>
 
-            {/* Load More Button - Hidden when infinite scroll is enabled */}
-            {pagination && pagination.has_next && !isInfiniteScrollEnabled && (
-              <div className="flex justify-center mt-8">
-                <Button
-                  variant="outline"
-                  onClick={async () => {
-                    const nextPage = currentPage + 1
-                    setCurrentPage(nextPage)
-                    
-                    const searchFilters = { ...filters }
-                    if (searchQuery.trim()) {
-                      searchFilters.search = searchQuery
-                    }
-                    if (timeFilter) {
-                      const now = new Date()
-                      let filterDate = new Date()
-                      
-                      switch (timeFilter) {
-                        case 'past_hour':
-                          filterDate.setHours(now.getHours() - 1)
-                          break
-                        case 'past_6_hours':
-                          filterDate.setHours(now.getHours() - 6)
-                          break
-                        case 'past_24_hours':
-                          filterDate.setDate(now.getDate() - 1)
-                          break
-                        case 'past_week':
-                          filterDate.setDate(now.getDate() - 7)
-                          break
-                      }
-                      
-                      searchFilters.date_posted = filterDate.toISOString()
-                    }
-                    
-                    await loadJobs(nextPage, 20, searchFilters, sortBy, sortOrder)
-                  }}
-                  disabled={isLoading}
-                  className="px-8"
-                >
-                  {isLoading ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Loading...
-                    </>
-                  ) : (
-                    <>
-                      Load More Jobs
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </>
-                  )}
-                </Button>
-              </div>
-            )}
-            
-            {/* Infinite Scroll Trigger */}
-            <div ref={loadMoreRef} className="h-20 flex items-center justify-center">
-              {isLoading && isInfiniteScrollEnabled && pagination?.has_next && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                  Loading more jobs...
-                </div>
-              )}
-              {pagination && !pagination.has_next && filteredJobs.length > 0 && (
-                <p className="text-sm text-muted-foreground">
-                  You've reached the end of the job listings
-                </p>
-              )}
-            </div>
-
-            {/* Pagination Info */}
-            {pagination && (
-              <div className="text-center mt-4">
-                <p className="text-sm text-muted-foreground">
-                  Showing {filteredJobs.length} of {pagination.total_jobs} jobs
-                  {pagination.total_pages > 1 && (
-                    <span> • Page {pagination.current_page} of {pagination.total_pages}</span>
-                  )}
-                  {isInfiniteScrollEnabled && pagination.has_next && (
-                    <span> • Scroll for more</span>
-                  )}
-                </p>
-              </div>
-            )}
+            {/* Pagination Controls */}
+            <PaginationControls />
           </div>
         ) : (
           <Card className="p-12">
@@ -730,29 +765,161 @@ export default function JobsPage() {
               <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground mb-2">No jobs found</h3>
               <p className="text-muted-foreground mb-4">
-                Try adjusting your search criteria or refresh to get the latest jobs
+                {filteredJobs.length === 0 && jobs.length > 0 
+                  ? 'No jobs match your current filters. Try adjusting your criteria.'
+                  : 'Try refreshing to get the latest jobs'}
               </p>
               <div className="flex gap-2 justify-center">
                 <Button onClick={handleManualRefresh} variant="outline">
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Refresh Jobs
                 </Button>
-                <Button 
-                  onClick={() => {
-                    setTimeFilter(null)
-                    setSearchQuery('')
-                    setFilters({})
-                    loadJobs(1, 20, {}, sortBy, sortOrder)
-                  }} 
-                  variant="outline"
-                >
-                  Clear Filters
-                </Button>
+                {(searchQuery || timeFilter || viewMode !== 'all') && (
+                  <Button 
+                    onClick={() => {
+                      setTimeFilter(null)
+                      setSearchQuery('')
+                      setViewMode('all')
+                      setFilters({})
+                    }} 
+                    variant="outline"
+                  >
+                    Clear Filters
+                  </Button>
+                )}
               </div>
             </div>
           </Card>
         )}
       </div>
+
+      {/* Job Details Modal */}
+      <Dialog open={isJobDetailsOpen} onOpenChange={setIsJobDetailsOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>{selectedJob?.title}</span>
+              <div className="flex items-center gap-2">
+                <div className={cn("w-2 h-2 rounded-full", selectedJob ? getPlatformColor(selectedJob.platform) : '')}></div>
+                <span className="text-sm text-muted-foreground capitalize">{selectedJob?.platform}</span>
+              </div>
+            </DialogTitle>
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Building2 className="h-4 w-4" />
+                <span className="font-medium">{selectedJob?.company}</span>
+              </div>
+              {selectedJob?.location && (
+                <div className="flex items-center gap-1">
+                  <MapPin className="h-4 w-4" />
+                  <span>{selectedJob.location}</span>
+                </div>
+              )}
+              {selectedJob?.remote && (
+                <Badge variant="secondary" className="text-xs">Remote</Badge>
+              )}
+            </div>
+          </DialogHeader>
+          
+          <ScrollArea className="max-h-[60vh]">
+            <div className="space-y-6">
+              {/* Job Description */}
+              <div>
+                <h4 className="font-semibold mb-2">Job Description</h4>
+                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                  {selectedJob?.description}
+                </p>
+              </div>
+
+              {/* Requirements */}
+              {selectedJob?.requirements && (
+                <div>
+                  <h4 className="font-semibold mb-2">Requirements</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                    {selectedJob.requirements}
+                  </p>
+                </div>
+              )}
+
+              {/* Benefits */}
+              {selectedJob?.benefits && (
+                <div>
+                  <h4 className="font-semibold mb-2">Benefits</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                    {selectedJob.benefits}
+                  </p>
+                </div>
+              )}
+
+              {/* Skills */}
+              {selectedJob?.skills && selectedJob.skills.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-2">Required Skills</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedJob.skills.map((skill, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {skill}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Salary */}
+              {(selectedJob?.salary_min || selectedJob?.salary_max) && (
+                <div>
+                  <h4 className="font-semibold mb-2">Salary Range</h4>
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <DollarSign className="h-4 w-4" />
+                    <span>
+                      {selectedJob.salary_min && selectedJob.salary_max 
+                        ? `$${selectedJob.salary_min.toLocaleString()} - $${selectedJob.salary_max.toLocaleString()}`
+                        : selectedJob.salary_min 
+                        ? `$${selectedJob.salary_min.toLocaleString()}+`
+                        : `Up to $${selectedJob.salary_max?.toLocaleString()}`
+                      }
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Modal Actions */}
+              <div className="flex gap-3 pt-4 border-t">
+                <Button
+                  onClick={(e) => selectedJob && handleTailorResume(selectedJob, e)}
+                  disabled={selectedJob ? generatingResumes.has(selectedJob.job_id) : false}
+                  className="flex-1"
+                >
+                  {selectedJob && generatingResumes.has(selectedJob.job_id) ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Generating Resume...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-4 w-4 mr-2" />
+                      Tailor Resume
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => selectedJob && window.open(selectedJob.application_url, '_blank')}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Apply on {selectedJob?.platform}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => selectedJob && handleSaveJob(selectedJob.job_id)}
+                >
+                  <Heart className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

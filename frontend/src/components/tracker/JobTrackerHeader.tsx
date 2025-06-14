@@ -10,11 +10,15 @@ import {
   BarChart3,
   Filter,
   Download,
-  Settings
+  Settings,
+  RefreshCw,
+  Search
 } from 'lucide-react'
+import { QuickAddModal, type QuickAddFormData } from './QuickAddModal'
+import { Input } from '@/components/ui/input'
 import Link from 'next/link'
 
-interface JobTrackerHeaderProps {
+interface ApplicationPipelineHeaderProps {
   viewMode: 'kanban' | 'list'
   onViewModeChange: (mode: 'kanban' | 'list') => void
   stats: {
@@ -24,15 +28,31 @@ interface JobTrackerHeaderProps {
     offers: number
     avgResponseTime: number
   }
+  onRefresh?: () => void
+  lastUpdated?: Date | null
+  isRefreshing?: boolean
+  onAddApplication?: (data: QuickAddFormData) => Promise<void>
+  searchQuery?: string
+  onSearchChange?: (query: string) => void
 }
 
-export function JobTrackerHeader({ viewMode, onViewModeChange, stats }: JobTrackerHeaderProps) {
+export function ApplicationPipelineHeader({ 
+  viewMode, 
+  onViewModeChange, 
+  stats, 
+  onRefresh, 
+  lastUpdated, 
+  isRefreshing = false,
+  onAddApplication,
+  searchQuery = '',
+  onSearchChange
+}: ApplicationPipelineHeaderProps) {
   return (
     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
       {/* Title and Quick Stats */}
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold text-gray-900">Job Tracker</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Application Pipeline</h1>
           <Badge variant="secondary" className="text-sm">
             {stats.active} active
           </Badge>
@@ -50,6 +70,12 @@ export function JobTrackerHeader({ viewMode, onViewModeChange, stats }: JobTrack
               <span>{stats.avgResponseTime}d avg response</span>
             </>
           )}
+          {lastUpdated && (
+            <>
+              <span className="text-gray-400">•</span>
+              <span>Last updated: {lastUpdated.toLocaleTimeString()}</span>
+            </>
+          )}
         </div>
       </div>
 
@@ -64,7 +90,7 @@ export function JobTrackerHeader({ viewMode, onViewModeChange, stats }: JobTrack
             className="h-8 px-3"
           >
             <LayoutGrid className="h-4 w-4 mr-2" />
-            Kanban
+            Pipeline
           </Button>
           <Button
             variant={viewMode === 'list' ? 'default' : 'ghost'}
@@ -78,28 +104,43 @@ export function JobTrackerHeader({ viewMode, onViewModeChange, stats }: JobTrack
         </div>
 
         {/* Quick Actions */}
-        <Button variant="outline" size="sm" className="hidden md:flex">
-          <Calendar className="h-4 w-4 mr-2" />
-          Calendar
-        </Button>
+        {onRefresh && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        )}
         
-        <Button variant="outline" size="sm" className="hidden md:flex">
-          <BarChart3 className="h-4 w-4 mr-2" />
-          Analytics
-        </Button>
+        {/* Removed Calendar and Analytics buttons as they're not implemented */}
+        
 
-        <Button variant="outline" size="sm">
-          <Filter className="h-4 w-4 mr-2" />
-          Filter
-        </Button>
+        {/* Search Bar */}
+        {onSearchChange && (
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search companies, roles..."
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="pl-9 w-64"
+            />
+          </div>
+        )}
 
-        {/* Primary Action */}
-        <Button asChild>
-          <Link href="/dashboard/tracker/new">
+        {/* Quick Add Application */}
+        {onAddApplication ? (
+          <QuickAddModal onAdd={onAddApplication} isLoading={isRefreshing} />
+        ) : (
+          <Button disabled title="Add application functionality coming soon">
             <Plus className="h-4 w-4 mr-2" />
             Add Application
-          </Link>
-        </Button>
+          </Button>
+        )}
       </div>
     </div>
   )

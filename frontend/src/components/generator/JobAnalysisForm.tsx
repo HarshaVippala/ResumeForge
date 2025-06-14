@@ -46,19 +46,27 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
     setIsAnalyzing(true)
     setError('')
 
+    // Set a timeout for the entire operation
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Analysis timed out. Please check your backend connection.')), 30000) // 30 second timeout
+    })
+
     try {
-      // Call backend API for job analysis
-      const response = await fetch('http://localhost:5001/api/analyze-job', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          company: formData.company,
-          role: formData.role,
-          jobDescription: formData.jobDescription
-        })
-      })
+      // Race between the actual API call and the timeout
+      const response = await Promise.race([
+        fetch('http://localhost:5001/api/analyze-job', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            company: formData.company,
+            role: formData.role,
+            jobDescription: formData.jobDescription
+          })
+        }),
+        timeoutPromise
+      ]) as Response
 
       if (!response.ok) {
         throw new Error(`API Error: ${response.status} ${response.statusText}`)
@@ -102,13 +110,19 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
 
       // Provide more specific error messages
       if (err instanceof Error) {
-        if (err.message.includes('fetch')) {
+        if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
           setError('Unable to connect to backend server. Please ensure the backend is running on http://localhost:5001')
+        } else if (err.message.includes('timed out')) {
+          setError('Analysis is taking too long. Please check that the backend server and LM Studio are running.')
+        } else if (err.message.includes('LM Studio')) {
+          setError('LM Studio is not running or no models are loaded. The system will use basic keyword extraction.')
+          // Don't block the user, let them know it will work with limitations
+          setTimeout(() => setError(''), 5000)
         } else {
           setError(err.message)
         }
       } else {
-        setError('Failed to analyze job description')
+        setError('Failed to analyze job description. Please try again.')
       }
     }
   }
@@ -125,159 +139,180 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
 
   if (isAnalyzing) {
     return (
-      <div className="max-w-2xl mx-auto">
-        <Card>
-          <CardContent className="p-8">
-            <div className="text-center">
-              <div className="mb-6">
-                <Loader className="h-12 w-12 text-blue-600 animate-spin mx-auto mb-4" />
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Analyzing Job Description</h2>
-                <p className="text-gray-600">Using AI to extract keywords and requirements...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
+        <div className="max-w-2xl w-full">
+          <Card className="shadow-2xl border-0 bg-white dark:bg-gray-800">
+            <CardContent className="p-12">
+              {/* Modern animated header */}
+              <div className="text-center mb-10">
+                <div className="relative inline-block mb-6">
+                  <div className="absolute inset-0 bg-blue-500 rounded-full blur-xl opacity-20 animate-pulse" />
+                  <div className="relative bg-gradient-to-tr from-blue-500 to-blue-600 rounded-2xl p-4">
+                    <Sparkles className="h-10 w-10 text-white animate-pulse" />
+                  </div>
+                </div>
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent mb-3">
+                  Analyzing Job Description
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 text-lg">
+                  Extracting strategic insights to optimize your resume
+                </p>
               </div>
               
-              <div className="space-y-4">
-                <div className="flex items-center justify-center space-x-3 text-sm">
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                  <span className="text-gray-700">Parsing job requirements</span>
+              {/* Progress steps with modern design */}
+              <div className="space-y-6">
+                <div className="flex items-center space-x-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                      <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        Parsing job requirements
+                      </span>
+                      <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+                        Complete
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div className="h-full bg-green-500 rounded-full" style={{ width: '100%' }} />
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center justify-center space-x-3 text-sm">
-                  <Loader className="h-5 w-5 animate-spin text-blue-500" />
-                  <span className="text-gray-700">Categorizing keywords by importance</span>
+
+                <div className="flex items-center space-x-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                      <Loader className="h-6 w-6 text-blue-600 dark:text-blue-400 animate-spin" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        Extracting strategic keywords
+                      </span>
+                      <span className="text-xs text-blue-600 dark:text-blue-400 font-medium animate-pulse">
+                        Processing...
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div className="h-full bg-blue-500 rounded-full animate-progress" style={{ width: '60%' }} />
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center justify-center space-x-3 text-sm">
-                  <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
-                  <span className="text-gray-400">Scoring keyword impact</span>
+
+                <div className="flex items-center space-x-4 opacity-50">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                      <div className="h-6 w-6 rounded-full border-2 border-gray-300 dark:border-gray-600" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Analyzing skill criticality
+                      </span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">
+                        Pending
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                  </div>
                 </div>
-                <div className="flex items-center justify-center space-x-3 text-sm">
-                  <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
-                  <span className="text-gray-400">Generating optimization suggestions</span>
+
+                <div className="flex items-center space-x-4 opacity-50">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                      <div className="h-6 w-6 rounded-full border-2 border-gray-300 dark:border-gray-600" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Generating optimization strategy
+                      </span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">
+                        Pending
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+
+              {/* Helpful tip */}
+              <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  <strong>Tip:</strong> We're using advanced AI to understand not just keywords, but the strategic context of the role to help you stand out.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-7xl mx-auto h-[calc(100vh-200px)] flex flex-col">
+    <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="text-center mb-6 flex-shrink-0">
-        <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-          <Sparkles className="h-6 w-6 text-blue-600" />
-        </div>
-        <h1 className="text-2xl font-bold text-gray-900">
-          Resume Generator
-        </h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-foreground">Resume Generator</h1>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-hidden">
-        {/* Left Column - Job Details */}
-        <div className="lg:col-span-1 space-y-4">
-          <Card className="h-fit">
-            <CardHeader>
-              <CardTitle className="text-lg">Job Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Company Input */}
-              <div>
-                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
-                  <Building2 className="h-4 w-4" />
-                  <span>Company Name *</span>
-                </label>
-                <Input
-                  type="text"
-                  value={formData.company}
-                  onChange={(e) => handleInputChange('company', e.target.value)}
-                  placeholder="e.g., Google, Microsoft, Startup Inc."
-                  className="w-full"
-                />
-              </div>
+      {/* Form */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Form Fields */}
+        <div className="space-y-4">
+          <Input
+            type="text"
+            value={formData.company}
+            onChange={(e) => handleInputChange('company', e.target.value)}
+            placeholder="Company *"
+            className="h-10"
+          />
+          
+          <Input
+            type="text"
+            value={formData.role}
+            onChange={(e) => handleInputChange('role', e.target.value)}
+            placeholder="Role *"
+            className="h-10"
+          />
+          
+          <Input
+            type="url"
+            value={formData.jobUrl}
+            onChange={(e) => handleInputChange('jobUrl', e.target.value)}
+            placeholder="Job URL (optional)"
+            className="h-10"
+          />
 
-              {/* Role Input */}
-              <div>
-                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
-                  <User className="h-4 w-4" />
-                  <span>Role Title *</span>
-                </label>
-                <Input
-                  type="text"
-                  value={formData.role}
-                  onChange={(e) => handleInputChange('role', e.target.value)}
-                  placeholder="e.g., Senior Software Engineer, Product Manager"
-                  className="w-full"
-                />
-              </div>
+          {error && (
+            <div className="bg-destructive/15 border border-destructive/20 rounded-lg p-3">
+              <p className="text-destructive text-sm">{error}</p>
+            </div>
+          )}
 
-              {/* Job URL (Optional) */}
-              <div>
-                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
-                  <Globe className="h-4 w-4" />
-                  <span>Job Posting URL (Optional)</span>
-                </label>
-                <div className="flex gap-2">
-                  <Input
-                    type="url"
-                    value={formData.jobUrl}
-                    onChange={(e) => handleInputChange('jobUrl', e.target.value)}
-                    placeholder="https://company.com/careers/job-123"
-                    className="flex-1"
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={handleUrlImport}
-                    disabled={!formData.jobUrl}
-                    className="px-4"
-                  >
-                    Import
-                  </Button>
-                </div>
-              </div>
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-red-700 text-sm">{error}</p>
-                </div>
-              )}
-
-              <Button
-                onClick={analyzeJob}
-                disabled={!formData.company || !formData.role || !formData.jobDescription}
-                className="w-full py-3 flex items-center justify-center space-x-2"
-              >
-                <Sparkles className="h-5 w-5" />
-                <span>Generate Resume</span>
-              </Button>
-            </CardContent>
-          </Card>
-
-
-
-
+          <Button
+            onClick={analyzeJob}
+            disabled={!formData.company || !formData.role || !formData.jobDescription}
+            className="w-full h-10"
+          >
+            Generate Resume
+          </Button>
         </div>
 
         {/* Right Column - Job Description */}
-        <div className="lg:col-span-2 flex flex-col">
-          <Card className="flex-1 flex flex-col">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2 text-lg">
-                <FileText className="h-5 w-5" />
-                <span>Job Description *</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col">
-              <textarea
-                value={formData.jobDescription}
-                onChange={(e) => handleInputChange('jobDescription', e.target.value)}
-                placeholder="Paste the complete job description here...
-
-Include requirements, responsibilities, and qualifications for best results"
-                className="flex-1 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none min-h-0"
-              />
-            </CardContent>
-          </Card>
+        <div className="lg:col-span-2">
+          <textarea
+            value={formData.jobDescription}
+            onChange={(e) => handleInputChange('jobDescription', e.target.value)}
+            placeholder="Paste job description here..."
+            className="w-full h-full min-h-[400px] px-4 py-3 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-input transition-colors resize-none text-sm bg-background text-foreground"
+          />
         </div>
       </div>
     </div>

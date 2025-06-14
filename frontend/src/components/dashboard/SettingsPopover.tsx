@@ -208,8 +208,7 @@ export function SettingsPopover({ isOpen, onClose, triggerRef }: SettingsPopover
           top: position.top,
           left: position.left,
           backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-          '--tw-bg-opacity': '1',
-        }}
+        } as React.CSSProperties}
       >
         {/* Arrow */}
         <div 

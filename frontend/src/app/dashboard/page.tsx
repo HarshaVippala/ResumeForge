@@ -29,14 +29,17 @@ import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import { EmailDetailsModal } from '@/components/dashboard/EmailDetailsModal'
 import { useBackgroundSync } from '@/hooks/useBackgroundSync'
+import { useThreadedSync } from '@/hooks/useThreadedSync'
+import { ThreadList } from '@/components/dashboard/ThreadList'
 
 export default function DashboardPage() {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [expandedEvent, setExpandedEvent] = useState<number | null>(null)
   const [selectedEmail, setSelectedEmail] = useState<any | null>(null)
   const [hasInitialLoad, setHasInitialLoad] = useState(false)
+  const [useThreadedView, setUseThreadedView] = useState(true) // Default to threaded view
 
-  // Use background sync hook for email data
+  // Use background sync hook for email data (legacy/fallback)
   const { 
     emailData, 
     isLoading: isLoadingEmails, 
@@ -46,12 +49,49 @@ export default function DashboardPage() {
     unreadCount 
   } = useBackgroundSync()
 
-  // Extract email data with fallbacks
-  const emailActivities = emailData?.email_activities || []
-  const attentionItems = emailData?.attention_items || []
-  const quickUpdates = emailData?.quick_updates || []
-  const upcomingEvents = emailData?.upcoming_events || []
-  const emailStats = { applicationsThisWeek: emailData?.emails_processed || 0 }
+  // Use threaded sync hook for threaded email data
+  const {
+    threadData,
+    isLoading: isLoadingThreads,
+    lastUpdated: lastThreadUpdate,
+    manualSync: manualThreadSync,
+    toggleThread,
+    isThreadExpanded,
+    getThreadEmails,
+    isThreadLoading,
+    threadCount,
+    totalEmailCount,
+    unreadCount: threadUnreadCount,
+    emailThreads,
+    attentionItems: threadAttentionItems,
+    upcomingEvents: threadUpcomingEvents,
+    summaryStats
+  } = useThreadedSync()
+
+  // Extract data based on view mode
+  const currentData = useThreadedView 
+    ? {
+        activities: emailThreads,
+        attentionItems: threadAttentionItems,
+        upcomingEvents: threadUpcomingEvents,
+        quickUpdates: threadData?.quick_updates || [],
+        isLoading: isLoadingThreads,
+        lastUpdated: lastThreadUpdate,
+        emailCount: totalEmailCount,
+        unreadCount: threadUnreadCount,
+        manualSync: manualThreadSync
+      }
+    : {
+        activities: emailData?.email_activities || [],
+        attentionItems: emailData?.attention_items || [],
+        upcomingEvents: emailData?.upcoming_events || [],
+        quickUpdates: emailData?.quick_updates || [],
+        isLoading: isLoadingEmails,
+        lastUpdated: lastUpdated,
+        emailCount: emailCount,
+        unreadCount: unreadCount,
+        manualSync: manualSync
+      }
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
@@ -60,17 +100,33 @@ export default function DashboardPage() {
 
   // Set initial load flag after mount to prevent loading flash
   useEffect(() => {
-    const timer = setTimeout(() => setHasInitialLoad(true), 100)
+    const timer = setTimeout(() => setHasInitialLoad(true), 50) // Reduced from 100ms to 50ms
     return () => clearTimeout(timer)
+  }, [])
+
+  // Initialize threaded sync service on mount
+  useEffect(() => {
+    const { threadedSyncService } = require('@/services/threadedSyncService')
+    threadedSyncService.initialize()
+    
+    return () => {
+      // Cleanup on unmount
+      threadedSyncService.destroy()
+    }
   }, [])
 
   // Manual refresh handler
   const handleManualRefresh = async () => {
     try {
-      await manualSync()
+      await currentData.manualSync()
     } catch (error) {
       console.error('Manual sync failed:', error)
     }
+  }
+
+  // Thread view toggle handler
+  const handleViewToggle = () => {
+    setUseThreadedView(!useThreadedView)
   }
 
   const formatEmailTime = (timestamp: string) => {
@@ -92,12 +148,12 @@ export default function DashboardPage() {
 
   const getEmailTypeColor = (type: string) => {
     switch (type) {
-      case 'interview': return 'bg-blue-500 text-white'
-      case 'offer': return 'bg-green-500 text-white'
-      case 'recruiter': return 'bg-purple-500 text-white'
-      case 'rejection': return 'bg-red-500 text-white'
-      case 'follow_up': return 'bg-yellow-500 text-white'
-      default: return 'bg-gray-500 text-white'
+      case 'interview': return 'bg-info text-info-foreground'
+      case 'offer': return 'bg-success text-success-foreground'
+      case 'recruiter': return 'bg-primary text-primary-foreground'
+      case 'rejection': return 'bg-destructive text-destructive-foreground'
+      case 'follow_up': return 'bg-warning text-warning-foreground'
+      default: return 'bg-secondary text-secondary-foreground'
     }
   }
 
@@ -114,10 +170,12 @@ export default function DashboardPage() {
 
   const getEmailIcon = (type: string) => {
     switch (type) {
-      case 'rejection': return <AlertCircle className="h-4 w-4 text-red-500" />
-      case 'interview': return <CheckCircle className="h-4 w-4 text-green-500" />
-      case 'recruiter': return <Users className="h-4 w-4 text-blue-500" />
-      default: return <Mail className="h-4 w-4 text-gray-500" />
+      case 'rejection': return <AlertCircle className="h-4 w-4 text-destructive" />
+      case 'interview': return <CheckCircle className="h-4 w-4 text-info" />
+      case 'recruiter': return <Users className="h-4 w-4 text-primary" />
+      case 'offer': return <CheckCircle className="h-4 w-4 text-success" />
+      case 'follow_up': return <Clock className="h-4 w-4 text-warning" />
+      default: return <Mail className="h-4 w-4 text-muted-foreground" />
     }
   }
 
@@ -202,7 +260,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         {/* Email Activity Center - Takes 3/4 width on large screens */}
         <div className="xl:col-span-3">
-          <Card className="overflow-hidden shadow-xl dark:bg-elevation-2 dark:border-border/20 dark:shadow-2xl">
+          <Card className="overflow-hidden shadow-lg border-border/50 bg-card/95 dark:bg-elevation-2 dark:border-border/30 dark:shadow-2xl">
             {/* Sticky Header with Enhanced Glass Effect */}
             <div className="sticky top-0 z-10 bg-card/95 dark:bg-elevation-3/95 backdrop-blur-md border-b border-border/50 dark:border-border/20 p-6 pb-4 transition-all duration-300">
               <div className="flex items-center justify-between">
@@ -213,12 +271,20 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs flex items-center gap-1">
-                      {isLoadingEmails ? 'Syncing...' : (
+                      {currentData.isLoading ? 'Syncing...' : (
                         <>
-                          {emailCount > 0 ? emailCount : '0'} emails
-                          {unreadCount > 0 && (
+                          {useThreadedView ? (
+                            <>
+                              {threadCount > 0 ? threadCount : '0'} threads
+                              <span className="text-gray-400">•</span>
+                              {currentData.emailCount > 0 ? currentData.emailCount : '0'} emails
+                            </>
+                          ) : (
+                            <>{currentData.emailCount > 0 ? currentData.emailCount : '0'} emails</>
+                          )}
+                          {currentData.unreadCount > 0 && (
                             <span className="text-blue-600 font-medium">
-                              • {unreadCount} unread
+                              • {currentData.unreadCount} unread
                             </span>
                           )}
                         </>
@@ -228,17 +294,26 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {/* View Toggle Button */}
+                  <Button
+                    variant={useThreadedView ? "default" : "outline"}
+                    size="sm"
+                    onClick={handleViewToggle}
+                    className="h-6 px-3 text-xs"
+                  >
+                    {useThreadedView ? '🧵 Threads' : '📧 List'}
+                  </Button>
                   <Badge variant="outline" className="text-xs text-muted-foreground">
-                    Last updated: {lastUpdated ? formatLastUpdated(lastUpdated) : 'Never'}
+                    Last updated: {currentData.lastUpdated ? formatLastUpdated(currentData.lastUpdated) : 'Never'}
                   </Badge>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handleManualRefresh}
-                    disabled={isLoadingEmails}
+                    disabled={currentData.isLoading}
                     className="h-6 px-2"
                   >
-                    <RefreshCw className={cn("h-3 w-3", isLoadingEmails && "animate-spin")} />
+                    <RefreshCw className={cn("h-3 w-3", currentData.isLoading && "animate-spin")} />
                   </Button>
                   <Badge variant="secondary" className="text-xs">
                     Auto-refresh: {process.env.NEXT_PUBLIC_EMAIL_SYNC_INTERVAL || '1h'}
@@ -250,146 +325,166 @@ export default function DashboardPage() {
             {/* Email List with Scrolling */}
             <div className="px-6 pb-6">
             <div className="space-y-4">
-              {isLoadingEmails && hasInitialLoad ? (
-                // Enhanced skeleton loading state
-                <div className="space-y-3">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="p-4 border border-border rounded-lg">
-                      <div className="animate-pulse">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3 flex-1">
-                            <div className="w-4 h-4 bg-muted rounded-full"></div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <div className="h-4 bg-muted rounded w-24"></div>
-                                <div className="h-3 bg-muted rounded w-32"></div>
-                              </div>
-                              <div className="h-3 bg-muted rounded w-full mb-1"></div>
-                              <div className="h-3 bg-muted rounded w-2/3"></div>
-                            </div>
-                          </div>
-                          <div className="flex flex-col items-end gap-1">
-                            <div className="h-3 bg-muted rounded w-12"></div>
-                            <div className="h-5 bg-muted rounded w-16"></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="text-center py-4">
-                    <RefreshCw className="h-6 w-6 text-muted-foreground mx-auto mb-2 animate-spin" />
-                    <p className="text-sm text-muted-foreground">Syncing emails...</p>
-                  </div>
-                </div>
-              ) : !hasInitialLoad ? (
-                // Initial load state - show minimal skeleton to prevent flash
-                <div className="space-y-3">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="p-4 border border-border rounded-lg opacity-50">
-                      <div className="animate-pulse">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3 flex-1">
-                            <div className="w-4 h-4 bg-muted rounded-full"></div>
-                            <div className="flex-1">
-                              <div className="h-4 bg-muted rounded w-32 mb-2"></div>
-                              <div className="h-3 bg-muted rounded w-full mb-1"></div>
-                            </div>
-                          </div>
-                          <div className="h-5 bg-muted rounded w-16"></div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : emailActivities.length > 0 ? (
-                <div className="h-[calc(100vh-260px)] min-h-[500px] overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-                  <AnimatePresence>
-                    {emailActivities.map((email: any, index: number) => (
-                    <motion.div 
-                      key={email.id}
-                      initial={{ opacity: 0, y: -20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 20 }}
-                      transition={{ 
-                        duration: 0.3, 
-                        delay: index * 0.1 
-                      }}
-                      onClick={() => setSelectedEmail(email)}
-                      className="group cursor-pointer p-4 border border-gray-100 rounded-xl hover:bg-accent/30 hover:border-accent-foreground/20 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:scale-[1.01] dark:hover:bg-elevation-2 dark:border-gray-800 dark:hover:shadow-2xl"
-                    >
-                      {/* Redesigned compact card layout */}
-                      <div className="flex items-center justify-between w-full">
-                        {/* Left side - Main info */}
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className="flex-shrink-0">
-                            {getEmailIcon(email.type)}
-                          </div>
-                          
-                          <div className="flex-1 min-w-0">
-                            {/* Company and Position */}
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-semibold text-foreground truncate">
-                                {email.company || (email.sender && email.sender.includes('@') 
-                                  ? email.sender.split('@')[0].replace(/[._-]/g, ' ').split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-                                  : 'Unknown Company')}
-                              </h3>
-                              {email.extracted_details?.position && (
-                                <span className="text-sm text-muted-foreground truncate">
-                                  • {email.extracted_details.position}
-                                </span>
-                              )}
-                            </div>
-                            
-                            {/* Summary */}
-                            <p className="text-sm text-muted-foreground line-clamp-1 mb-1">
-                              {email.summary || getSummaryLine(email)}
-                            </p>
-                            
-                            {/* Sender email or recruiter info */}
-                            <p className="text-xs text-muted-foreground/80">
-                              {email.extracted_details?.recruiter_name 
-                                ? `From: ${email.extracted_details.recruiter_name}${email.sender ? ` <${email.sender}>` : ''}`
-                                : email.sender || 'No sender information'}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        {/* Right side - Metadata */}
-                        <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-4">
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">
-                            {formatEmailTime(email.timestamp)}
-                          </span>
-                          
-                          <div className="flex items-center gap-1">
-                            <Badge 
-                              variant="secondary"
-                              className={cn("text-xs px-2 py-0", getEmailTypeColor(email.type))}
-                            >
-                              {getEmailTypeLabel(email.type)}
-                            </Badge>
-                            
-                            {email.status === 'unread' && (
-                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            )}
-                            
-                            {email.extracted_details?.urgency === 'high' && (
-                              <Badge variant="destructive" className="text-xs px-1 py-0">
-                                !
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                    ))}
-                  </AnimatePresence>
+              {/* Conditional rendering based on view mode */}
+              {useThreadedView ? (
+                /* Threaded View */
+                <div className="h-[calc(100vh-260px)] min-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+                  <ThreadList
+                    threads={currentData.activities}
+                    isLoading={currentData.isLoading}
+                    onThreadToggle={toggleThread}
+                    onEmailClick={setSelectedEmail}
+                    isThreadExpanded={isThreadExpanded}
+                    getThreadEmails={getThreadEmails}
+                    isThreadLoading={isThreadLoading}
+                    onRefresh={handleManualRefresh}
+                  />
                 </div>
               ) : (
-                <div className="text-center py-12">
-                  <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No recent emails</p>
-                  <p className="text-sm text-muted-foreground mt-1">Click refresh to sync your emails</p>
-                </div>
+                /* Flat Email List View (Legacy) */
+                <>
+                  {currentData.isLoading && hasInitialLoad ? (
+                    // Enhanced skeleton loading state
+                    <div className="space-y-3">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="p-4 border border-border/30 rounded-xl bg-muted/30">
+                          <div className="animate-pulse">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3 flex-1">
+                                <div className="w-4 h-4 bg-muted rounded-full"></div>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <div className="h-4 bg-muted rounded w-24"></div>
+                                    <div className="h-3 bg-muted rounded w-32"></div>
+                                  </div>
+                                  <div className="h-3 bg-muted rounded w-full mb-1"></div>
+                                  <div className="h-3 bg-muted rounded w-2/3"></div>
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-end gap-1">
+                                <div className="h-3 bg-muted rounded w-12"></div>
+                                <div className="h-5 bg-muted rounded w-16"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <div className="text-center py-4">
+                        <RefreshCw className="h-6 w-6 text-muted-foreground mx-auto mb-2 animate-spin" />
+                        <p className="text-sm text-muted-foreground">Syncing emails...</p>
+                      </div>
+                    </div>
+                  ) : !hasInitialLoad ? (
+                    // Initial load state - show minimal skeleton to prevent flash
+                    <div className="space-y-3">
+                      {[...Array(3)].map((_, i) => (
+                        <div key={i} className="p-4 border border-border/30 rounded-xl bg-muted/30 opacity-50">
+                          <div className="animate-pulse">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3 flex-1">
+                                <div className="w-4 h-4 bg-muted rounded-full"></div>
+                                <div className="flex-1">
+                                  <div className="h-4 bg-muted rounded w-32 mb-2"></div>
+                                  <div className="h-3 bg-muted rounded w-full mb-1"></div>
+                                </div>
+                              </div>
+                              <div className="h-5 bg-muted rounded w-16"></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : currentData.activities.length > 0 ? (
+                    <div className="h-[calc(100vh-260px)] min-h-[500px] overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+                      <AnimatePresence>
+                        {currentData.activities.map((email: any, index: number) => (
+                        <motion.div 
+                          key={email.id || email.thread_id || `activity-${index}`}
+                          initial={{ opacity: 0, y: -20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 20 }}
+                          transition={{ 
+                            duration: 0.3, 
+                            delay: index * 0.1 
+                          }}
+                          onClick={() => setSelectedEmail(email)}
+                          className="group cursor-pointer p-4 elevated-card hover:bg-accent/30 hover:shadow-primary/10 transition-all duration-300"
+                        >
+                          {/* Redesigned compact card layout */}
+                          <div className="flex items-center justify-between w-full">
+                            {/* Left side - Main info */}
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <div className="flex-shrink-0">
+                                {getEmailIcon(email.type)}
+                              </div>
+                              
+                              <div className="flex-1 min-w-0">
+                                {/* Company and Position */}
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="font-semibold text-foreground truncate">
+                                    {email.company || (email.sender && email.sender.includes('@') 
+                                      ? email.sender.split('@')[0].replace(/[._-]/g, ' ').split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+                                      : 'Unknown Company')}
+                                  </h3>
+                                  {email.extracted_details?.position && (
+                                    <span className="text-sm text-muted-foreground truncate">
+                                      • {email.extracted_details.position}
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                {/* Summary */}
+                                <p className="text-sm text-muted-foreground line-clamp-1 mb-1">
+                                  {email.summary || getSummaryLine(email)}
+                                </p>
+                                
+                                {/* Sender email or recruiter info */}
+                                <p className="text-xs text-muted-foreground/80">
+                                  {email.extracted_details?.recruiter_name 
+                                    ? `From: ${email.extracted_details.recruiter_name}${email.sender ? ` <${email.sender}>` : ''}`
+                                    : email.sender || 'No sender information'}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            {/* Right side - Metadata */}
+                            <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-4">
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                {formatEmailTime(email.timestamp)}
+                              </span>
+                              
+                              <div className="flex items-center gap-1">
+                                <Badge 
+                                  variant="secondary"
+                                  className={cn("text-xs px-2 py-0", getEmailTypeColor(email.type))}
+                                >
+                                  {getEmailTypeLabel(email.type)}
+                                </Badge>
+                                
+                                {email.status === 'unread' && (
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                )}
+                                
+                                {email.extracted_details?.urgency === 'high' && (
+                                  <Badge variant="destructive" className="text-xs px-1 py-0">
+                                    !
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">No recent emails</p>
+                      <p className="text-sm text-muted-foreground mt-1">Click refresh to sync your emails</p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
             </div>
@@ -399,7 +494,7 @@ export default function DashboardPage() {
         {/* Right Sidebar - Upcoming Events and Quick Updates */}
         <div className="space-y-6">
           {/* Compact Upcoming Events with Modern Styling */}
-          <Card className="p-4 bg-gradient-to-br from-card via-card to-accent/5 border-border/50 shadow-xl hover:shadow-2xl transition-all duration-300 dark:bg-elevation-2 dark:border-border/20 dark:shadow-2xl dark:hover:bg-elevation-3">
+          <Card className="p-4 bg-gradient-to-br from-card via-card to-accent/5 border-border/40 shadow-lg hover:shadow-xl transition-all duration-300 dark:bg-elevation-2 dark:border-border/30 dark:shadow-2xl dark:hover:bg-elevation-3">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-foreground">Upcoming</h2>
               <Button variant="ghost" size="sm" className="h-6 text-xs" asChild>
@@ -409,9 +504,9 @@ export default function DashboardPage() {
               </Button>
             </div>
             <div className="space-y-2">
-              {upcomingEvents.length > 0 ? 
-                upcomingEvents.slice(0, 3).map((event: any) => (
-                  <div key={event.id} className="border border-border rounded-lg p-2 hover:bg-accent/30 transition-colors dark:border-border/30 dark:hover:bg-elevation-3">
+              {currentData.upcomingEvents.length > 0 ? 
+                currentData.upcomingEvents.slice(0, 3).map((event: any, index: number) => (
+                  <div key={event.id || `event-${index}`} className="border border-border/40 rounded-lg p-2 hover:bg-accent/30 transition-colors dark:border-border/25 dark:hover:bg-elevation-3">
                     <div className="flex items-center gap-2">
                       {getPlatformIcon(event.platform)}
                       <div className="flex-1 min-w-0">
@@ -465,19 +560,19 @@ export default function DashboardPage() {
           </Card>
 
           {/* Actionable Quick Updates */}
-          {attentionItems.length > 0 && (
-            <Card className="p-4 bg-gradient-to-br from-orange-50/50 via-card to-yellow-50/50 dark:from-orange-950/20 dark:via-card dark:to-yellow-950/20 border-orange-200/50 dark:border-orange-800/50 hover:shadow-lg transition-all duration-300">
+          {currentData.attentionItems.length > 0 && (
+            <Card className="p-4 bg-warning/10 border-warning/30 hover:shadow-lg transition-all duration-300">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-semibold text-foreground">Action Required</h2>
               </div>
               <div className="space-y-2">
-                {attentionItems.slice(0, 3).map((item: any, index: number) => (
-                  <div key={index} className="border border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950 rounded-lg p-2">
+                {currentData.attentionItems.slice(0, 3).map((item: any, index: number) => (
+                  <div key={item.id || `attention-${index}`} className="border border-warning/40 bg-warning/20 rounded-lg p-2">
                     <div className="flex items-start gap-2">
-                      <AlertCircle className="h-4 w-4 text-orange-500 flex-shrink-0 mt-0.5" />
+                      <AlertCircle className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground text-xs">{item.title}</p>
-                        <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
+                        <p className="font-medium text-warning-foreground text-xs">{item.title}</p>
+                        <p className="text-xs text-warning-foreground/80 line-clamp-2">{item.description}</p>
                       </div>
                     </div>
                   </div>

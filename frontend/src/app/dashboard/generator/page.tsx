@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { JobAnalysisForm } from '@/components/generator/JobAnalysisForm'
 import { KeywordIntelligence } from '@/components/generator/KeywordIntelligence'
 import { QuickEditor } from '@/components/generator/QuickEditor'
@@ -12,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { History, RefreshCw, Download, Save, X } from 'lucide-react'
 import type { JobAnalysis } from '@/types'
 
-export default function ResumeGeneratorPage() {
+function ResumeGeneratorContent() {
   const {
     generatorStep,
     jobAnalysis,
@@ -32,11 +33,51 @@ export default function ResumeGeneratorPage() {
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([])
   const [isHydrated, setIsHydrated] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
+  
+  const searchParams = useSearchParams()
 
   // Handle hydration to prevent navigation reset
   useEffect(() => {
     setIsHydrated(true)
   }, [])
+
+  // Check for existing session from URL parameters
+  useEffect(() => {
+    const sessionId = searchParams.get('sessionId')
+    
+    if (sessionId && isHydrated) {
+      // Load existing session and go directly to editing step
+      loadExistingSession(sessionId)
+    }
+  }, [searchParams, isHydrated])
+
+  const loadExistingSession = async (sessionId: string) => {
+    try {
+      // Load the session data from the backend
+      const response = await fetch(`http://localhost:5001/api/session/${sessionId}`)
+      
+      if (response.ok) {
+        const result = await response.json()
+        
+        if (result.success && result.session) {
+          // Set the job analysis data from the session
+          setJobAnalysis(result.session.analysis_data)
+          
+          // Move to editing step since analysis is already complete
+          setGeneratorStep('editing')
+          
+          // Load base resume content
+          await loadBaseResumeContent()
+        } else {
+          console.error('Invalid session response:', result)
+        }
+      } else {
+        console.error('Failed to load session:', sessionId)
+      }
+    } catch (error) {
+      console.error('Error loading session:', error)
+    }
+  }
 
   const {
     versionHistory,
@@ -239,5 +280,17 @@ export default function ResumeGeneratorPage() {
       </div>
 
     </div>
+  )
+}
+
+export default function ResumeGeneratorPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <ResumeGeneratorContent />
+    </Suspense>
   )
 }

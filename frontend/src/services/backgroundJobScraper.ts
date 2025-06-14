@@ -27,6 +27,26 @@ export interface Job {
   skills: string[]
   experience_level: string
   scraped_at: string
+  // Enhanced fields
+  sponsorship_status?: 'SPONSORS_H1B' | 'NO_SPONSORSHIP' | 'UNCERTAIN'
+  sponsorship_confidence?: number
+  sponsorship_reasoning?: string
+  enhanced_tech_stack?: {
+    technologies: Array<{
+      name: string
+      category: 'LANGUAGE' | 'FRAMEWORK_LIBRARY' | 'DATABASE' | 'CLOUD_PLATFORM' | 'DEVOPS_TOOL' | 'SOFTWARE'
+      level: 'REQUIRED' | 'PREFERRED'
+      experience_years?: string
+    }>
+    summary: {
+      required_count: number
+      preferred_count: number
+      primary_language?: string
+      primary_framework?: string
+    }
+  }
+  processing_status?: 'new' | 'processing' | 'completed' | 'failed'
+  confidence_category?: 'high' | 'medium' | 'low'
 }
 
 export interface JobFilters {
@@ -101,7 +121,6 @@ class BackgroundJobScrapingService {
       return
     }
 
-    console.log('🔄 Initializing Background Job Scraping Service')
     this.isInitialized = true
 
     // Load existing jobs immediately
@@ -237,7 +256,16 @@ class BackgroundJobScrapingService {
         }
       })
 
-      const result = await apiRequest<any>(`${apiConfig.endpoints.jobs}?${params}`)
+      const url = `${apiConfig.endpoints.jobs}?${params}`
+      console.log('Loading jobs from:', url)
+
+      const result = await apiRequest<any>(url)
+      
+      console.log('Jobs API response:', {
+        success: result.success,
+        jobsCount: result.jobs?.length || 0,
+        pagination: result.pagination
+      })
       
       if (result.success) {
         this.jobsData = {
@@ -294,13 +322,29 @@ class BackgroundJobScrapingService {
     this.notifySubscribers()
 
     try {
-      const result = await apiRequest<any>(apiConfig.endpoints.jobScrape, {
+      // Job scraping can take 2-3 minutes, so we need a longer timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 180000) // 3 minutes
+      
+      const result = await fetch(`${apiConfig.baseUrl}${apiConfig.endpoints.jobScrape}`, {
         method: 'POST',
-        body: JSON.stringify(config || {})
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(config || {}),
+        signal: controller.signal,
       })
+      
+      clearTimeout(timeoutId)
+      
+      if (!result.ok) {
+        throw new Error(`Job scraping failed: ${result.status} ${result.statusText}`)
+      }
+      
+      const data = await result.json()
 
-      if (result.success) {
-        console.log('🔄 Manual scraping completed:', result.results)
+      if (data.success) {
+        console.log('🔄 Manual scraping completed:', data.results)
         
         // Refresh jobs data after scraping
         await this.loadJobsFromDatabase()
@@ -308,7 +352,7 @@ class BackgroundJobScrapingService {
         
         this.status = 'idle'
       } else {
-        throw new Error(result.error || 'Scraping failed')
+        throw new Error((result as any).error || 'Scraping failed')
       }
     } catch (error) {
       console.error('Manual scraping failed:', error)
@@ -392,8 +436,6 @@ class BackgroundJobScrapingService {
           }
           this.lastUpdated = new Date()
           this.notifySubscribers()
-          
-          console.log(`💼 Loaded ${result.jobs.length} jobs from database`)
         } else {
           console.warn('⚠️ Jobs API returned unsuccessful response:', result)
         }
@@ -492,7 +534,7 @@ class BackgroundJobScrapingService {
       lastUpdated: this.lastUpdated,
       error: this.error
     }
-
+    
     this.subscribers.forEach(callback => {
       try {
         callback(data)
