@@ -6,8 +6,11 @@ Generates human-natural resume sections with space optimization and anti-AI dete
 import logging
 import json
 from typing import Dict, List, Any, Optional
-from services.lm_studio_client import LMStudioClient
+from ..lm_studio_client import LMStudioClient
 from .resume_parser import ResumeParser
+from .strategic_context import StrategicContext
+from .experience_prioritizer import ExperiencePrioritizer, PrioritizedExperience
+from .prompt_manager import PromptManager
 from .enhancers.human_natural_enhancer import HumanNaturalEnhancer
 from .enhancers.space_optimizer import SpaceOptimizer
 from .enhancers.skills_merger import SkillsMerger
@@ -21,6 +24,8 @@ class SectionGenerator:
     def __init__(self, lm_studio_client: LMStudioClient):
         self.lm_studio = lm_studio_client
         self.resume_parser = ResumeParser()
+        self.experience_prioritizer = ExperiencePrioritizer()
+        self.prompt_manager = PromptManager()
         
         # Initialize enhancement modules
         self.human_enhancer = HumanNaturalEnhancer()
@@ -37,6 +42,312 @@ class SectionGenerator:
             "skills": self._generate_skills_fallback,
             "experience": self._generate_experience_fallback
         }
+    
+    def generate_strategic_sections(
+        self,
+        strategic_context: StrategicContext,
+        preferences: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Generate all resume sections using strategic context and experience prioritization
+        
+        Args:
+            strategic_context: Rich context from job analysis
+            preferences: User preferences for generation
+            
+        Returns:
+            Dictionary with all generated sections and metadata
+        """
+        logger.info(f"Generating strategic sections for {strategic_context.job_info.job_title}")
+        
+        results = {
+            "sections": {},
+            "prioritized_experiences": [],
+            "strategic_guidance_applied": {},
+            "generation_metadata": {
+                "used_ai": self.lm_studio.test_connection(),
+                "experience_count": 0,
+                "keywords_targeted": len(strategic_context.get_all_critical_keywords()),
+                "human_enhancements_applied": []
+            }
+        }
+        
+        # Step 1: Prioritize experiences based on strategic context
+        base_experiences = self.resume_parser.base_experiences
+        prioritized_experiences = self.experience_prioritizer.prioritize_experiences(
+            base_experiences, strategic_context
+        )
+        prioritized_experiences = self.experience_prioritizer.apply_bullet_limits(prioritized_experiences)
+        
+        results["prioritized_experiences"] = prioritized_experiences
+        results["generation_metadata"]["experience_count"] = len(prioritized_experiences)
+        
+        # Step 2: Generate summary with strategic guidance
+        summary_result = self._generate_strategic_summary(strategic_context, preferences)
+        results["sections"]["summary"] = summary_result["content"]
+        results["strategic_guidance_applied"]["summary"] = summary_result["guidance_applied"]
+        results["generation_metadata"]["human_enhancements_applied"].extend(
+            summary_result.get("enhancements", [])
+        )
+        
+        # Step 3: Generate skills with intelligent merging
+        skills_result = self._generate_strategic_skills(strategic_context, preferences)
+        results["sections"]["skills"] = skills_result["content"]
+        results["strategic_guidance_applied"]["skills"] = skills_result["guidance_applied"]
+        
+        # Step 4: Generate experience section from prioritized experiences
+        experience_result = self._generate_strategic_experience(
+            prioritized_experiences, strategic_context, preferences
+        )
+        results["sections"]["experience"] = experience_result["content"]
+        results["strategic_guidance_applied"]["experience"] = experience_result["guidance_applied"]
+        results["generation_metadata"]["human_enhancements_applied"].extend(
+            experience_result.get("enhancements", [])
+        )
+        
+        logger.info(f"Generated strategic sections: summary ({len(results['sections']['summary'])} chars), "
+                   f"skills ({len(results['sections']['skills'])} chars), "
+                   f"experience ({len(results['sections']['experience'])} bullets)")
+        
+        return results
+    
+    def _generate_strategic_summary(
+        self, 
+        strategic_context: StrategicContext, 
+        preferences: Optional[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Generate summary using strategic guidance"""
+        
+        # Get priority skills for summary emphasis
+        priority_skills = strategic_context.get_priority_skills_for_section("summary")
+        
+        # Get human voice context for natural generation
+        human_context = strategic_context.get_human_voice_context()
+        
+        # Use current summary as base but enhance with strategic guidance
+        base_summary = self.base_content.get("summary", "")
+        
+        # Create enhanced prompt focusing on authenticity
+        if self.lm_studio.test_connection():
+            enhanced_summary = self._generate_strategic_summary_with_ai(
+                base_summary, strategic_context, priority_skills, human_context
+            )
+        else:
+            enhanced_summary = self._generate_strategic_summary_fallback(
+                base_summary, strategic_context, priority_skills
+            )
+        
+        # Apply human-natural enhancement
+        enhancement_result = self.human_enhancer.enhance_content_naturalness(
+            enhanced_summary, 'summary'
+        )
+        final_summary = enhancement_result['enhanced']
+        
+        # Apply space optimization
+        optimization_result = self.space_optimizer.optimize_content_length(
+            final_summary, 'summary'
+        )
+        optimized_summary = optimization_result['optimized']
+        
+        return {
+            "content": optimized_summary,
+            "guidance_applied": {
+                "priority_skills_emphasized": priority_skills[:3],
+                "seniority_aligned": strategic_context.strategic_positioning.target_seniority,
+                "role_specialized": strategic_context.strategic_positioning.role_specialization
+            },
+            "enhancements": enhancement_result.get('improvements_made', [])
+        }
+    
+    def _generate_strategic_skills(
+        self, 
+        strategic_context: StrategicContext, 
+        preferences: Optional[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Generate skills using intelligent merging"""
+        
+        # Get job keywords for skills integration
+        job_keywords = strategic_context.get_all_critical_keywords()
+        
+        # Use skills merger for intelligent integration
+        base_skills = self.resume_parser.base_profile
+        enhanced_sections = self.skills_merger.merge_skills_with_job_keywords(
+            base_skills=base_skills,
+            job_keywords=job_keywords
+        )
+        
+        # Format for response
+        formatted_skills = self._format_skills_sections_for_response(enhanced_sections)
+        
+        # Apply human enhancement
+        enhancement_result = self.human_enhancer.enhance_content_naturalness(
+            formatted_skills, 'skills'
+        )
+        final_skills = enhancement_result['enhanced']
+        
+        return {
+            "content": final_skills,
+            "guidance_applied": {
+                "job_keywords_integrated": len(job_keywords),
+                "skills_sections_created": list(enhanced_sections.keys()),
+                "emphasis_strategy": "priority_first"
+            }
+        }
+    
+    def _generate_strategic_experience(
+        self, 
+        prioritized_experiences: List[PrioritizedExperience],
+        strategic_context: StrategicContext,
+        preferences: Optional[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Generate experience section from prioritized experiences"""
+        
+        experience_bullets = []
+        enhancements_applied = []
+        
+        for exp in prioritized_experiences:
+            # Use the selected bullets from prioritization
+            for bullet in exp.selected_bullets:
+                # Enhance bullet with job-relevant keywords naturally
+                enhanced_bullet = self._enhance_experience_bullet_naturally(
+                    bullet, strategic_context, exp.get('technologies_used_in_role', [])
+                )
+                
+                # Apply human-natural enhancement
+                enhancement_result = self.human_enhancer.enhance_content_naturalness(
+                    enhanced_bullet, 'experience_bullet'
+                )
+                final_bullet = enhancement_result['enhanced']
+                
+                # Apply space optimization
+                optimization_result = self.space_optimizer.optimize_content_length(
+                    final_bullet, 'experience_bullet'
+                )
+                optimized_bullet = optimization_result['optimized']
+                
+                experience_bullets.append(optimized_bullet)
+                enhancements_applied.extend(enhancement_result.get('improvements_made', []))
+        
+        return {
+            "content": experience_bullets,
+            "guidance_applied": {
+                "experiences_prioritized": len(prioritized_experiences),
+                "total_bullets_selected": len(experience_bullets),
+                "prioritization_scores": [exp.relevance_score for exp in prioritized_experiences],
+                "lead_experience": prioritized_experiences[0].get('company_name', '') if prioritized_experiences else ""
+            },
+            "enhancements": enhancements_applied
+        }
+    
+    def _generate_strategic_summary_with_ai(
+        self,
+        base_summary: str,
+        strategic_context: StrategicContext,
+        priority_skills: List[str],
+        human_context: Dict[str, Any]
+    ) -> str:
+        """Generate enhanced summary using AI with strategic guidance"""
+        
+        # Create human-voice prompt for natural summary
+        prompt = self.prompts.get_conversational_summary_prompt(
+            keywords=priority_skills,
+            base_content={"summary": base_summary},
+            job_context={
+                "company": strategic_context.job_info.company,
+                "role": strategic_context.job_info.job_title
+            }
+        )
+        
+        system_prompt = self.prompts.get_human_voice_system_prompt()
+        
+        try:
+            result = self.lm_studio.generate_structured_response(
+                system_prompt=system_prompt,
+                user_prompt=prompt,
+                expected_format="JSON with variations",
+                max_tokens=500,
+                temperature=0.7
+            )
+            
+            if result and isinstance(result, dict) and "variations" in result:
+                # Pick the best variation (first one typically)
+                variations = result["variations"]
+                if variations and len(variations) > 0:
+                    best_variation = variations[0]
+                    if isinstance(best_variation, dict) and "text" in best_variation:
+                        return best_variation["text"]
+            
+            # Fallback if AI generation doesn't work as expected
+            return self._generate_strategic_summary_fallback(base_summary, strategic_context, priority_skills)
+            
+        except Exception as e:
+            logger.error(f"AI summary generation failed: {e}")
+            return self._generate_strategic_summary_fallback(base_summary, strategic_context, priority_skills)
+    
+    def _generate_strategic_summary_fallback(
+        self,
+        base_summary: str,
+        strategic_context: StrategicContext,
+        priority_skills: List[str]
+    ) -> str:
+        """Fallback summary generation with strategic enhancement"""
+        
+        # Start with base summary or create from strategic context
+        if base_summary:
+            enhanced_summary = base_summary
+        else:
+            enhanced_summary = f"Software Engineer with {strategic_context.strategic_positioning.experience_level or '5+ years'} of experience"
+        
+        # Add role specialization naturally
+        role_spec = strategic_context.strategic_positioning.role_specialization
+        if role_spec and role_spec.lower() not in enhanced_summary.lower():
+            enhanced_summary += f" specializing in {role_spec.lower()}"
+        
+        # Add priority skills naturally
+        if priority_skills:
+            skills_text = ", ".join(priority_skills[:3])
+            enhanced_summary += f". Expert in {skills_text}"
+        
+        # Add industry focus if specified
+        if strategic_context.strategic_positioning.industry_focus:
+            enhanced_summary += f" with focus on {strategic_context.strategic_positioning.industry_focus.lower()}"
+        
+        enhanced_summary += ". Passionate about building scalable, high-quality software solutions."
+        
+        return enhanced_summary
+    
+    def _enhance_experience_bullet_naturally(
+        self,
+        bullet: str,
+        strategic_context: StrategicContext,
+        experience_tech: List[str]
+    ) -> str:
+        """Enhance experience bullet with strategic keywords naturally"""
+        
+        # Get critical keywords that should be emphasized
+        critical_skills = [item.skill for item in strategic_context.requirement_criticality.deal_breakers]
+        
+        enhanced_bullet = bullet
+        
+        # Look for opportunities to naturally integrate missing critical skills
+        for skill in critical_skills:
+            skill_lower = skill.lower()
+            
+            # Skip if already mentioned
+            if skill_lower in enhanced_bullet.lower():
+                continue
+            
+            # Check if this skill is related to the experience technology stack
+            if any(tech.lower() in skill_lower or skill_lower in tech.lower() for tech in experience_tech):
+                # Find natural integration points
+                if 'api' in enhanced_bullet.lower() and 'api' in skill_lower:
+                    enhanced_bullet = enhanced_bullet.replace('API', f'{skill} API')
+                elif 'using' in enhanced_bullet.lower() and skill_lower in ['node.js', 'python', 'typescript']:
+                    enhanced_bullet = enhanced_bullet.replace('using', f'using {skill},')
+                elif 'with' in enhanced_bullet.lower() and skill_lower in ['aws', 'mongodb', 'redis']:
+                    enhanced_bullet = enhanced_bullet.replace('with', f'with {skill} and')
+        
+        return enhanced_bullet
     
     def generate_human_natural_section(
         self,
