@@ -2,6 +2,56 @@
 
 All notable changes to ResumeForge will be documented in this file.
 
+## [2.2.0] - 2025-06-14
+
+### Added
+- **Redesigned Jobs Page**: Complete UI/UX overhaul for job discovery
+  - Responsive job grid layout with compact, information-rich cards
+  - Real-time scraping status indicator with live backend API integration
+  - Time-based filtering with inline button pills (1hr, 6hr, 24hr, 1 week)
+  - URL state management for persistent filters across navigation
+  - Lightning icon for resume tailoring actions
+  - Prominent time-ago labels with color coding for competitive advantage
+
+- **Enhanced Job Components**: Modular, reusable job interface components
+  - JobCard component with enhanced information hierarchy
+  - JobCardSkeleton for smooth loading states
+  - FilterBar with integrated search and status monitoring
+  - JobGrid with responsive layout and error handling
+  - ScrapingStatusIndicator with real-time platform monitoring
+
+- **Real-time Data Integration**: Complete elimination of mock data
+  - Live API connections to `/api/scraping/stats` and `/api/scraping/platforms`
+  - Real platform reliability metrics and job counts
+  - Proper error handling for rate limiting (429 errors) and API failures
+  - Accurate job source status with platform-specific indicators
+
+### Enhanced
+- **Job Discovery Experience**: Improved usability and visual design
+  - Better utilization of page width with multi-column responsive layout
+  - Clean white theme matching application design standards
+  - Enhanced text contrast for improved accessibility (WCAG compliance)
+  - Time-sensitive job application timing with color-coded labels
+  - Integrated job statistics and scraping metrics
+
+- **URL State Management**: Persistent filter state
+  - Custom `useQueryParamState` hook for Next.js integration
+  - Search, view mode, and time filter persistence across navigation
+  - Improved user experience with maintained filter preferences
+
+### Technical Improvements
+- **Component Architecture**: Modern React patterns and TypeScript
+  - Modular component design with clear separation of concerns
+  - Custom hooks for state management and API integration
+  - Responsive CSS Grid layouts for optimal display
+  - Error boundaries and loading states throughout
+
+- **API Integration**: Real-time data fetching and error handling
+  - Elimination of all mock data in favor of live backend connections
+  - Comprehensive error handling for network failures and rate limits
+  - Polling for real-time updates every 2 minutes
+  - Platform-specific status indicators based on actual reliability metrics
+
 ## [2.1.0] - 2025-01-14
 
 ### Added
