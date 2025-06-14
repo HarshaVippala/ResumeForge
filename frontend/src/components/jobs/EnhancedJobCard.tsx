@@ -242,7 +242,7 @@ export const EnhancedJobCard: React.FC<EnhancedJobCardProps> = ({
                       >
                         <Icon className="h-3 w-3" />
                         {tech.name}
-                        {tech.experience_years && (
+                        {'experience_years' in tech && tech.experience_years && (
                           <span className="text-xs opacity-70">({tech.experience_years})</span>
                         )}
                       </Badge>

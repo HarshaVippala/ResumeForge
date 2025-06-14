@@ -371,7 +371,7 @@ function JobsPageContent() {
     )
   }
 
-  const hasActiveFilters = searchQuery || viewMode !== 'all' || timeFilter !== '5d'
+  const hasActiveFilters = Boolean(searchQuery) || viewMode !== 'all' || timeFilter !== '5d'
 
   return (
     <div className="space-y-6 p-4 sm:p-6 lg:p-8">

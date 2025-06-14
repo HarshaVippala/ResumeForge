@@ -1,10 +1,26 @@
 'use client'
 
+import React from 'react'
 import { JobCard } from './JobCard'
 import { JobCardSkeleton } from './JobCardSkeleton'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Search, RefreshCw } from 'lucide-react'
+import type { Job } from '@/services/backgroundJobScraper'
+
+interface JobGridProps {
+  jobs?: Job[];
+  isLoading?: boolean;
+  hasError?: boolean;
+  error?: string | null;
+  onJobClick?: (job: Job, event: React.MouseEvent) => void;
+  onSaveJob?: (jobId: string) => void;
+  onTailorResume?: (job: Job, event: React.MouseEvent) => void;
+  onRefresh?: () => void;
+  onClearFilters?: () => void;
+  generatingResumes?: Set<string>;
+  showClearFilters?: boolean;
+}
 
 export function JobGrid({
   jobs = [],
@@ -18,7 +34,7 @@ export function JobGrid({
   onClearFilters,
   generatingResumes = new Set(),
   showClearFilters = false
-}) {
+}: JobGridProps) {
   
   if (hasError) {
     return (

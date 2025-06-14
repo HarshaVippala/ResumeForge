@@ -1,10 +1,33 @@
 'use client'
 
+import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Search, Zap, MapPin, Heart } from 'lucide-react'
+import { Search, Zap, MapPin, Heart, LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ScrapingStatusIndicator } from './ScrapingStatusIndicator'
+
+// Define the interface for the jobStats object
+interface JobStats {
+  startIndex: number;
+  endIndex: number;
+  filteredCount: number;
+  totalCount: number;
+}
+
+// Define the interface for the component's props
+interface FilterBarProps {
+  searchQuery: string;
+  setSearchQuery: (value: string) => void;
+  viewMode: string;
+  setViewMode: (value: string) => void;
+  timeFilter: string;
+  setTimeFilter: (value: string) => void;
+  onSearch: () => void;
+  isLoading?: boolean;
+  jobStats?: JobStats | null; // This is the key fix - allows object or null
+  showScrapingStatus?: boolean;
+}
 
 export function FilterBar({
   searchQuery,
@@ -17,14 +40,14 @@ export function FilterBar({
   isLoading = false,
   jobStats = null,
   showScrapingStatus = false
-}) {
-  const handleSearchKeyPress = (e) => {
+}: FilterBarProps) {
+  const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       onSearch()
     }
   }
 
-  const viewModes = [
+  const viewModes: { mode: 'all' | 'remote' | 'saved'; label: string; icon: LucideIcon }[] = [
     { mode: 'all', label: 'All Jobs', icon: Zap },
     { mode: 'remote', label: 'Remote', icon: MapPin },
     { mode: 'saved', label: 'Saved', icon: Heart }
@@ -120,7 +143,7 @@ export function FilterBar({
               {jobStats.filteredCount < jobStats.totalCount && ` (filtered from ${jobStats.totalCount} total)`}
             </span>
           )}
-          {showScrapingStatus && <ScrapingStatusIndicator />}
+          {showScrapingStatus && <ScrapingStatusIndicator className="" />}
         </div>
       </div>
     </div>

@@ -3,13 +3,14 @@
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { useCallback } from 'react'
 
+interface SetValueOptions {
+  replace?: boolean;
+}
+
 /**
  * Custom hook to sync component state with URL query parameters in Next.js
- * @param {string} key - The query parameter key
- * @param {string} defaultValue - Default value when parameter is not present
- * @returns {[string, function]} - Current value and setter function
  */
-export function useQueryParamState(key, defaultValue = '') {
+export function useQueryParamState(key: string, defaultValue: string = ''): [string, (newValue: string, options?: SetValueOptions) => void] {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
@@ -17,7 +18,7 @@ export function useQueryParamState(key, defaultValue = '') {
   const value = searchParams.get(key) ?? defaultValue
 
   const setValue = useCallback(
-    (newValue, options = {}) => {
+    (newValue: string, options: SetValueOptions = {}) => {
       const current = new URLSearchParams(Array.from(searchParams.entries()))
       
       if (newValue === null || newValue === undefined || newValue === defaultValue || newValue === '') {
