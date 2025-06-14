@@ -438,6 +438,57 @@ def get_saved_jobs():
         logger.error(f"Error fetching saved jobs: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@jobs_bp.route('/api/jobs/extracted', methods=['GET'])
+def get_extracted_jobs():
+    """
+    Get jobs extracted from email processing (job board emails)
+    
+    Query Parameters:
+    - days_back: Number of days to look back (default: 30)
+    - limit: Number of jobs to return (default: 50, max: 100)
+    """
+    
+    try:
+        from email_processing.services.storage_service import StorageService
+        storage_service = StorageService(db_manager)
+        
+        # Parse query parameters
+        days_back = int(request.args.get('days_back', 30))
+        limit = min(int(request.args.get('limit', 50)), 100)
+        
+        # Get extracted jobs using the storage service
+        extracted_jobs = storage_service.get_extracted_jobs(days_back=days_back, limit=limit)
+        
+        # Format the response for the frontend card interface
+        formatted_jobs = []
+        for job in extracted_jobs:
+            formatted_job = {
+                'id': job['id'],
+                'title': job['title'],
+                'company': job['company'],
+                'location': job['location'],
+                'remote': job['remote'],
+                'job_type': job['job_type'],
+                'salary_display': job['salary_display'],
+                'application_url': job['application_url'],
+                'platform': job['platform'],
+                'scraped_at': job['scraped_at'].isoformat() if job.get('scraped_at') else None,
+                'date_posted': job['date_posted'].isoformat() if job.get('date_posted') else None
+            }
+            formatted_jobs.append(formatted_job)
+        
+        return jsonify({
+            'success': True,
+            'jobs': formatted_jobs,
+            'total': len(formatted_jobs),
+            'source': 'email_extraction',
+            'message': f'Retrieved {len(formatted_jobs)} jobs extracted from email processing'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching extracted jobs: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @jobs_bp.route('/api/jobs/filters', methods=['GET'])
 def get_filter_options():
     """Get available filter options for job search"""
