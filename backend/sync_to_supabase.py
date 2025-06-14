@@ -12,7 +12,7 @@ from datetime import datetime
 # Add the backend directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from services.gmail_service import GmailService
+from services.secure_gmail_service import SecureGmailService
 from services.lm_studio_client import LMStudioClient
 from services.supabase_manager import SupabaseDatabaseManager
 
@@ -26,7 +26,7 @@ def sync_emails_to_supabase():
         logger.info("🚀 Syncing LLM-processed emails to Supabase...")
         
         # Initialize services
-        gmail = GmailService()
+        gmail = SecureGmailService()
         lm_studio = LMStudioClient()
         
         # Use Supabase directly

@@ -112,6 +112,121 @@ class SupabaseDatabaseManager:
                     )
                 """)
                 
+                # Jobs table for storing scraped job postings
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS jobs (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        job_id VARCHAR(255) UNIQUE NOT NULL,
+                        title VARCHAR(500) NOT NULL,
+                        company VARCHAR(255) NOT NULL,
+                        location VARCHAR(255),
+                        remote BOOLEAN DEFAULT false,
+                        job_type VARCHAR(50),
+                        salary_min INTEGER,
+                        salary_max INTEGER,
+                        salary_currency VARCHAR(10) DEFAULT 'USD',
+                        description TEXT,
+                        requirements TEXT,
+                        benefits TEXT,
+                        application_url VARCHAR(1000),
+                        company_logo_url VARCHAR(1000),
+                        platform VARCHAR(50) NOT NULL,
+                        date_posted TIMESTAMP,
+                        scraped_at TIMESTAMP DEFAULT NOW(),
+                        updated_at TIMESTAMP DEFAULT NOW(),
+                        is_active BOOLEAN DEFAULT true,
+                        skills TEXT[],
+                        experience_level VARCHAR(50),
+                        company_size VARCHAR(50),
+                        industry VARCHAR(100),
+                        employment_type VARCHAR(50),
+                        seniority_level VARCHAR(50),
+                        search_vector tsvector,
+                        
+                        CONSTRAINT valid_platform CHECK (platform IN ('indeed', 'linkedin', 'glassdoor', 'ziprecruiter', 'google', 'bayt', 'naukri')),
+                        CONSTRAINT valid_job_type CHECK (job_type IN ('full-time', 'part-time', 'contract', 'internship', 'temporary')),
+                        CONSTRAINT valid_experience_level CHECK (experience_level IN ('entry', 'mid', 'senior', 'executive', 'intern'))
+                    )
+                """)
+                
+                # Saved jobs table for user preferences
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS saved_jobs (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        user_email VARCHAR(255) NOT NULL,
+                        job_id UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+                        saved_at TIMESTAMP DEFAULT NOW(),
+                        notes TEXT,
+                        status VARCHAR(50) DEFAULT 'saved',
+                        
+                        UNIQUE(user_email, job_id)
+                    )
+                """)
+                
+                # Job alerts table for user notifications
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS job_alerts (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        user_email VARCHAR(255) NOT NULL,
+                        search_query VARCHAR(500) NOT NULL,
+                        location_filter VARCHAR(255),
+                        salary_min INTEGER,
+                        salary_max INTEGER,
+                        remote_only BOOLEAN DEFAULT false,
+                        platforms TEXT[],
+                        experience_levels TEXT[],
+                        is_active BOOLEAN DEFAULT true,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        last_triggered TIMESTAMP,
+                        email_notifications BOOLEAN DEFAULT true,
+                        frequency VARCHAR(20) DEFAULT 'daily'
+                    )
+                """)
+                
+                # Job applications table
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS job_applications (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        user_email VARCHAR(255) NOT NULL,
+                        job_id UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+                        applied_at TIMESTAMP DEFAULT NOW(),
+                        application_method VARCHAR(100),
+                        cover_letter_used TEXT,
+                        resume_version_used VARCHAR(255),
+                        status VARCHAR(50) DEFAULT 'applied',
+                        notes TEXT,
+                        interview_date TIMESTAMP,
+                        interview_type VARCHAR(50),
+                        interview_notes TEXT,
+                        
+                        UNIQUE(user_email, job_id)
+                    )
+                """)
+                
+                # Search vector function and trigger for jobs
+                cursor.execute("""
+                    CREATE OR REPLACE FUNCTION update_jobs_search_vector()
+                    RETURNS TRIGGER AS $$
+                    BEGIN
+                        NEW.search_vector := 
+                            setweight(to_tsvector('english', COALESCE(NEW.title, '')), 'A') ||
+                            setweight(to_tsvector('english', COALESCE(NEW.company, '')), 'B') ||
+                            setweight(to_tsvector('english', COALESCE(NEW.description, '')), 'C') ||
+                            setweight(to_tsvector('english', COALESCE(array_to_string(NEW.skills, ' '), '')), 'B');
+                        NEW.updated_at := NOW();
+                        RETURN NEW;
+                    END;
+                    $$ LANGUAGE plpgsql
+                """)
+                
+                cursor.execute("""
+                    DROP TRIGGER IF EXISTS jobs_search_vector_update ON jobs;
+                    CREATE TRIGGER jobs_search_vector_update
+                        BEFORE INSERT OR UPDATE ON jobs
+                        FOR EACH ROW
+                        EXECUTE FUNCTION update_jobs_search_vector()
+                """)
+                
                 # Create indexes for better performance
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_sessions_company ON resume_sessions (company)")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_sessions_role ON resume_sessions (role)")
@@ -122,7 +237,99 @@ class SupabaseDatabaseManager:
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_library_role ON resume_library (role)")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_library_created ON resume_library (created_at)")
                 
-                logger.info("Database initialized successfully with PostgreSQL")
+                # Jobs table indexes
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_jobs_location ON jobs(location)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_jobs_company ON jobs(company)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_jobs_date_posted ON jobs(date_posted DESC)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_jobs_platform ON jobs(platform)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_jobs_active ON jobs(is_active) WHERE is_active = true")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_jobs_remote ON jobs(remote) WHERE remote = true")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_jobs_salary ON jobs(salary_min, salary_max)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_jobs_experience ON jobs(experience_level)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_jobs_scraped_at ON jobs(scraped_at DESC)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_jobs_search ON jobs USING GIN(search_vector)")
+                
+                # Saved jobs indexes
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_saved_jobs_user ON saved_jobs(user_email)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_saved_jobs_status ON saved_jobs(status)")
+                
+                # Job alerts indexes
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_job_alerts_user ON job_alerts(user_email)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_job_alerts_active ON job_alerts(is_active) WHERE is_active = true")
+                
+                # Job applications indexes
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_job_applications_user ON job_applications(user_email)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_job_applications_status ON job_applications(status)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_job_applications_applied_at ON job_applications(applied_at DESC)")
+                
+                # Sync metadata table for Gmail incremental sync
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS sync_metadata (
+                        user_email VARCHAR(255) PRIMARY KEY,
+                        gmail_history_id VARCHAR(255),
+                        last_sync_timestamp TIMESTAMP,
+                        last_gmail_date TIMESTAMP,
+                        sync_status VARCHAR(50) DEFAULT 'idle',
+                        processed_count INTEGER DEFAULT 0,
+                        tokens_used INTEGER DEFAULT 0,
+                        error_message TEXT,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        updated_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+                
+                # Email communications table for processed emails
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS email_communications (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        email_id VARCHAR(255) UNIQUE NOT NULL,
+                        thread_id VARCHAR(255),
+                        subject TEXT,
+                        sender VARCHAR(500),
+                        recipient VARCHAR(500),
+                        email_date TIMESTAMP,
+                        email_type VARCHAR(50) DEFAULT 'other',
+                        extracted_data JSONB,
+                        confidence_score DECIMAL(3,2) DEFAULT 0.0,
+                        sentiment VARCHAR(20),
+                        urgency VARCHAR(20) DEFAULT 'normal',
+                        action_required TEXT,
+                        rich_summary TEXT,
+                        key_info JSONB,
+                        processing_status VARCHAR(50) DEFAULT 'pending',
+                        processed_at TIMESTAMP,
+                        contact_id UUID,
+                        job_opportunity_id UUID,
+                        recruiter_id UUID,
+                        conversation_stage VARCHAR(50),
+                        is_unread BOOLEAN DEFAULT true,
+                        error_message TEXT,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        updated_at TIMESTAMP DEFAULT NOW(),
+                        
+                        CONSTRAINT valid_email_type CHECK (email_type IN ('application_confirmation', 'interview_invitation', 'interview_confirmation', 'interview_reschedule', 'rejection', 'offer', 'follow_up', 'recruiter_outreach', 'assessment_invite', 'reference_request', 'other')),
+                        CONSTRAINT valid_urgency CHECK (urgency IN ('low', 'normal', 'high')),
+                        CONSTRAINT valid_sentiment CHECK (sentiment IN ('positive', 'neutral', 'negative')),
+                        CONSTRAINT valid_processing_status CHECK (processing_status IN ('pending', 'processing', 'processed', 'failed', 'skipped'))
+                    )
+                """)
+                
+                # Email communications indexes
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_comms_email_id ON email_communications(email_id)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_comms_thread_id ON email_communications(thread_id)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_comms_sender ON email_communications(sender)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_comms_email_date ON email_communications(email_date DESC)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_comms_email_type ON email_communications(email_type)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_comms_urgency ON email_communications(urgency)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_comms_processing_status ON email_communications(processing_status)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_comms_is_unread ON email_communications(is_unread) WHERE is_unread = true")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_email_comms_processed_at ON email_communications(processed_at DESC)")
+                
+                # Sync metadata indexes
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_sync_metadata_updated_at ON sync_metadata(updated_at DESC)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_sync_metadata_sync_status ON sync_metadata(sync_status)")
+                
+                logger.info("Database initialized successfully with PostgreSQL including jobs tables and email processing")
                 
         except Exception as e:
             logger.error(f"Failed to initialize database: {e}")

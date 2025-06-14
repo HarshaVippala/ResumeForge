@@ -7,6 +7,8 @@ and storing them in Supabase with deduplication and processing
 import logging
 import json
 import hashlib
+import random
+import requests
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 import pandas as pd
@@ -34,15 +36,47 @@ class JobScrapingService:
             "location": "United States",
             "distance": 50,
             "job_type": None,  # All job types
-            "is_remote": None,  # Both remote and on-site
+            "is_remote": False,  # Set to False to get both remote and on-site
             "results_wanted": 100,
             "easy_apply": None,
-            "description_format": "text"
+            "description_format": "html",  # JobSpy expects 'html' or 'markdown'
+            # Add modern user agent to avoid 403 errors
+            "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
         
-        # Platform configuration (start conservative to avoid blocks)
-        self.active_platforms = ["indeed", "glassdoor", "ziprecruiter"]
-        # Add later with proper proxy setup: ["linkedin", "google"]
+        # Platform configuration - prioritize working platforms
+        # Glassdoor currently has aggressive bot detection (403 errors)
+        self.active_platforms = ["indeed", "linkedin"]
+        self.problematic_platforms = ["glassdoor", "zip_recruiter"]  # Known to have bot detection/rate limit issues
+        
+        # Dynamic user agent pool - fetched from external source
+        self.user_agents = []
+        self.user_agents_url = "https://jnrbsn.github.io/user-agents/user-agents.json"
+        self.user_agents_cache_duration = 3600  # 1 hour cache
+        self.last_user_agents_fetch = None
+        
+        # Fallback static user agents in case dynamic fetch fails
+        self.fallback_user_agents = [
+            # Chrome on Windows
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+            # Chrome on macOS
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+            # Safari on macOS
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
+            # Firefox on Windows
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0",
+            # Edge on Windows
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0",
+        ]
+        
+        # Initialize user agents on startup
+        self._refresh_user_agents()
+        
+        # Proxy configuration (optional for avoiding rate limits)
+        self.proxies = []  # Add proxies here if needed: ['http://proxy1:port', 'http://proxy2:port']
+        self.use_proxies = len(self.proxies) > 0
         
         # Skill extraction patterns
         self.skill_patterns = [
@@ -52,6 +86,55 @@ class JobScrapingService:
             r'\b(?:PostgreSQL|MySQL|MongoDB|Redis|Elasticsearch|Cassandra)\b',
             r'\b(?:Machine Learning|AI|Data Science|DevOps|Microservices|Agile|Scrum)\b'
         ]
+    
+    def _refresh_user_agents(self) -> None:
+        """Fetch latest user agents from external source"""
+        try:
+            # Check if we need to refresh (cache expired or no agents)
+            current_time = datetime.now()
+            if (self.last_user_agents_fetch and 
+                (current_time - self.last_user_agents_fetch).total_seconds() < self.user_agents_cache_duration and
+                self.user_agents):
+                return  # Cache is still valid
+            
+            logger.info(f"Fetching fresh user agents from {self.user_agents_url}")
+            
+            # Fetch user agents with timeout
+            response = requests.get(self.user_agents_url, timeout=10)
+            response.raise_for_status()
+            
+            fresh_user_agents = response.json()
+            
+            if fresh_user_agents and len(fresh_user_agents) > 0:
+                self.user_agents = fresh_user_agents
+                self.last_user_agents_fetch = current_time
+                logger.info(f"✅ Successfully fetched {len(self.user_agents)} fresh user agents")
+            else:
+                raise ValueError("Empty user agents list received")
+                
+        except Exception as e:
+            logger.warning(f"Failed to fetch fresh user agents: {e}. Using fallback agents.")
+            if not self.user_agents:  # Only use fallback if we have no agents at all
+                self.user_agents = self.fallback_user_agents
+                logger.info(f"Using {len(self.user_agents)} fallback user agents")
+    
+    def _get_random_user_agent(self) -> str:
+        """Get a random user agent to avoid detection"""
+        # Refresh user agents if needed
+        self._refresh_user_agents()
+        
+        # Return random user agent from current pool
+        if self.user_agents:
+            return random.choice(self.user_agents)
+        else:
+            # Final fallback
+            return self.fallback_user_agents[0]
+    
+    def _get_random_proxy(self):
+        """Get a random proxy if available"""
+        if self.use_proxies and self.proxies:
+            return random.choice(self.proxies)
+        return None
     
     def scrape_jobs_for_software_engineering(
         self, 
@@ -104,17 +187,37 @@ class JobScrapingService:
         """Scrape jobs from a specific platform"""
         
         try:
+            # Add platform-specific configurations
+            scrape_config = config.copy()
+            
+            # Use random user agent for each platform to avoid detection
+            scrape_config["user_agent"] = self._get_random_user_agent()
+            
+            # Use random proxy if available
+            selected_proxy = self._get_random_proxy()
+            if selected_proxy:
+                scrape_config["proxies"] = [selected_proxy]
+                logger.info(f"Using proxy for {platform}: {selected_proxy}")
+            
+            # Add delays for problematic platforms
+            if platform in self.problematic_platforms:
+                logger.info(f"Using careful approach for {platform} due to bot detection")
+                scrape_config["results_wanted"] = min(scrape_config["results_wanted"], 20)  # Reduce load
+                logger.info(f"Using user agent for {platform}: {scrape_config['user_agent'][:50]}...")
+            
             # Perform scraping using JobSpy
             df = scrape_jobs(
                 site_name=[platform],
-                search_term=config["search_term"],
-                location=config["location"],
-                distance=config.get("distance", 50),
-                job_type=config.get("job_type"),
-                is_remote=config.get("is_remote"),
-                results_wanted=config["results_wanted"],
-                easy_apply=config.get("easy_apply"),
-                description_format=config["description_format"]
+                search_term=scrape_config["search_term"],
+                location=scrape_config["location"],
+                distance=scrape_config.get("distance", 50),
+                job_type=scrape_config.get("job_type"),
+                is_remote=scrape_config.get("is_remote"),
+                results_wanted=scrape_config["results_wanted"],
+                easy_apply=scrape_config.get("easy_apply"),
+                description_format=scrape_config["description_format"],
+                user_agent=scrape_config.get("user_agent"),
+                proxies=scrape_config.get("proxies")
             )
             
             if df is None or df.empty:
@@ -167,8 +270,8 @@ class JobScrapingService:
         
         return {
             "job_id": job_id,
-            "title": job_row.get('title', '').strip(),
-            "company": job_row.get('company', '').strip(),
+            "title": str(job_row.get('title', '')).strip(),
+            "company": str(job_row.get('company', '')).strip(),
             "location": location,
             "remote": is_remote or job_row.get('is_remote', False),
             "job_type": self._standardize_job_type(job_row.get('job_type')),
@@ -254,13 +357,13 @@ class JobScrapingService:
         else:
             return 'mid'
     
-    def _process_location(self, location: str) -> tuple[str, bool]:
+    def _process_location(self, location) -> tuple[str, bool]:
         """Process location and determine remote status"""
         
         if not location:
             return "", False
         
-        location = location.strip()
+        location = str(location).strip()
         is_remote = any(term in location.lower() for term in ['remote', 'work from home', 'wfh', 'anywhere'])
         
         # Clean up location string
