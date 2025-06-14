@@ -324,7 +324,10 @@ class BackgroundJobScrapingService {
     try {
       // Job scraping can take 2-3 minutes, so we need a longer timeout
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 180000) // 3 minutes
+      const timeoutId = setTimeout(() => {
+        console.warn('Job scraping timeout after 5 minutes')
+        controller.abort()
+      }, 300000) // 5 minutes timeout
       
       const result = await fetch(`${apiConfig.baseUrl}${apiConfig.endpoints.jobScrape}`, {
         method: 'POST',
@@ -357,7 +360,17 @@ class BackgroundJobScrapingService {
     } catch (error) {
       console.error('Manual scraping failed:', error)
       this.status = 'error'
-      this.error = error instanceof Error ? error.message : 'Scraping failed'
+      
+      // Handle specific error types
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          this.error = 'Job scraping timed out. Please try again later.'
+        } else {
+          this.error = error.message
+        }
+      } else {
+        this.error = 'Scraping failed'
+      }
     }
 
     this.notifySubscribers()
