@@ -19,3 +19,14 @@ python-dateutil>=2.8.0
 
 # Job scraping
 python-jobspy>=1.1.4
+
+# Groq AI inference
+groq>=0.4.0
+
+# OpenAI for enhanced job processing
+openai>=1.0.0
+
+# Advanced scraping with stealth (optional)
+playwright>=1.40.0
+playwright-stealth>=1.0.6
+undetected-chromedriver>=3.5.5

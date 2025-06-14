@@ -26,14 +26,26 @@ class LMStudioClient:
         logger.info(f"LM Studio client initialized with DeepSeek model: {self.model_name}")
         
     def test_connection(self) -> bool:
-        """Test if LM Studio server is available"""
+        """Test if LM Studio server is available and has models loaded"""
         try:
             response = requests.get(
                 f"{self.base_url}/v1/models",
                 timeout=5
             )
-            return response.status_code == 200
-        except requests.exceptions.RequestException:
+            if response.status_code == 200:
+                data = response.json()
+                models = data.get('data', [])
+                if models:
+                    logger.info(f"LM Studio connected with {len(models)} models available")
+                    return True
+                else:
+                    logger.warning("LM Studio connected but no models loaded")
+                    return False
+            else:
+                logger.warning(f"LM Studio connection failed with status: {response.status_code}")
+                return False
+        except requests.exceptions.RequestException as e:
+            logger.error(f"LM Studio connection error: {e}")
             return False
     
     def get_available_models(self) -> list:
@@ -117,7 +129,10 @@ class LMStudioClient:
             if json_schema:
                 payload["response_format"] = {
                     "type": "json_schema",
-                    "json_schema": json_schema
+                    "json_schema": {
+                        "name": "response_schema",
+                        "schema": json_schema
+                    }
                 }
                 logger.info("Using structured output with JSON schema")
             
@@ -219,7 +234,10 @@ class LMStudioClient:
             if json_schema:
                 payload["response_format"] = {
                     "type": "json_schema",
-                    "json_schema": json_schema
+                    "json_schema": {
+                        "name": "response_schema",
+                        "schema": json_schema
+                    }
                 }
                 logger.info("Using structured output with JSON schema for chat")
             

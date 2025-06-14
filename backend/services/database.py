@@ -1,6 +1,10 @@
 """
 Database Manager Service
 Handles SQLite database operations for resume sessions and library
+
+⚠️  DEPRECATED: This SQLite-based DatabaseManager is deprecated.
+    Use SupabaseDatabaseManager for all new features.
+    The email processing system now uses PostgreSQL/Supabase.
 """
 
 import sqlite3
@@ -14,7 +18,11 @@ from contextlib import contextmanager
 logger = logging.getLogger(__name__)
 
 class DatabaseManager:
-    """Manage SQLite database for resume sessions and library"""
+    """
+    DEPRECATED: Manage SQLite database for resume sessions and library
+    
+    ⚠️  This class is deprecated. Use SupabaseDatabaseManager instead.
+    """
     
     def __init__(self, db_path: str = "resume_builder.db"):
         self.db_path = db_path

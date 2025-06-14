@@ -8,6 +8,9 @@ import os
 import json
 import logging
 import sqlite3
+import threading
+import time
+import atexit
 from datetime import datetime
 from typing import Dict, List, Optional
 
@@ -20,7 +23,7 @@ from services.lm_studio_client import LMStudioClient
 from services.keyword_extractor import KeywordExtractor
 from services.database import DatabaseManager
 from services.supabase_manager import SupabaseDatabaseManager
-from services.unified_email_service import UnifiedEmailService
+# Legacy unified service removed
 from services.resume import (
     SectionGenerator,
     ResumeProcessor,
@@ -87,12 +90,73 @@ resume_parser = ResumeParser()
 document_patcher = DocumentPatcher()
 template_preview = TemplatePreviewService()
 
-# Initialize unified email service
-unified_email_service = UnifiedEmailService(db_manager, lm_studio)
+# Initialize enhanced email service with new architecture
+from services.enhanced_email_service import EnhancedEmailService
+enhanced_email_service = EnhancedEmailService(db_manager, lm_studio)
+
+# Initialize Gmail real-time sync (for Cloud Pub/Sub setup)
+from gmail_realtime_setup import setup_gmail_realtime
+gmail_realtime = setup_gmail_realtime(app)
+
+# Background Gmail Sync
+class BackgroundEmailSync:
+    def __init__(self, email_service):
+        self.email_service = email_service
+        self.sync_interval = 300  # 5 minutes
+        self.is_running = False
+        self.thread = None
+        
+    def start(self):
+        if not self.is_running:
+            self.is_running = True
+            self.thread = threading.Thread(target=self._sync_loop, daemon=True)
+            self.thread.start()
+            logger.info("🔄 Background email sync started (5 min intervals)")
+            
+    def stop(self):
+        self.is_running = False
+        if self.thread:
+            logger.info("🛑 Background email sync stopped")
+            
+    def _sync_loop(self):
+        while self.is_running:
+            try:
+                # Perform incremental sync
+                result = self.email_service.refresh_emails_incremental(
+                    user_email="me",
+                    is_auto_refresh=True
+                )
+                if result.get('success'):
+                    logger.debug(f"🔄 Auto sync: {result.get('message', 'Complete')}")
+                else:
+                    logger.warning(f"⚠️ Auto sync failed: {result.get('error', 'Unknown error')}")
+            except Exception as e:
+                logger.error(f"💥 Background sync error: {e}")
+            
+            # Wait for next sync
+            time.sleep(self.sync_interval)
+
+# Initialize background sync
+background_sync = BackgroundEmailSync(enhanced_email_service)
+atexit.register(background_sync.stop)
+
+# Legacy services removed - using only enhanced_email_service now
 
 # Initialize jobs API
 from api.jobs_api import jobs_bp
+from api.enhanced_jobs_api import enhanced_jobs_bp
+from api.scraping_api import scraping_bp
 app.register_blueprint(jobs_bp)
+app.register_blueprint(enhanced_jobs_bp)
+app.register_blueprint(scraping_bp)
+
+# Initialize applications API
+from api.applications_api import applications_bp
+app.register_blueprint(applications_bp)
+
+# Initialize Groq analytics API
+from api.groq_analytics_api import groq_analytics_bp
+app.register_blueprint(groq_analytics_bp)
 
 # Initialize database
 db_manager.init_database()
@@ -694,8 +758,8 @@ def sync_emails():
         
         logger.info(f"EMAIL SYNC: Processing emails from past {days_back} days (max {max_results})")
         
-        # Use unified email service for comprehensive processing
-        result = unified_email_service.process_emails_comprehensive(
+        # Use enhanced email service for comprehensive processing
+        result = enhanced_email_service.process_emails_comprehensive(
             days_back=days_back,
             max_results=max_results,
             force_reprocess=force_reprocess
@@ -715,7 +779,7 @@ def sync_emails():
             }), 500
         
         # Get formatted dashboard data
-        dashboard_result = unified_email_service.get_email_activities(days_back=days_back, limit=max_results)
+        dashboard_result = enhanced_email_service.get_email_activities(days_back=days_back, limit=max_results)
         
         return jsonify({
             "success": True,
@@ -744,6 +808,204 @@ def sync_emails():
             }
         }), 500
 
+@app.route('/api/emails/sync-enhanced', methods=['POST'])
+def sync_emails_enhanced():
+    """Enhanced email sync with Groq integration and intelligent processing"""
+    try:
+        # Get request parameters
+        data = request.get_json() or {}
+        days_back = data.get('days_back', 14)
+        max_results = data.get('max_results', 50)
+        force_reprocess = data.get('force_reprocess', False)
+        prefer_groq = data.get('prefer_groq', True)
+        
+        logger.info(f"ENHANCED EMAIL SYNC: Processing emails from past {days_back} days (max {max_results}), prefer_groq={prefer_groq}")
+        
+        # Use new enhanced email service with multi-stage processing
+        result = enhanced_email_service.process_emails_comprehensive(
+            days_back=days_back,
+            max_results=max_results,
+            force_reprocess=force_reprocess,
+            prefer_groq=prefer_groq
+        )
+        
+        if not result["success"]:
+            return jsonify({
+                "success": False,
+                "error": result.get("error", "Enhanced email processing failed"),
+                "data": {
+                    "emails_processed": 0,
+                    "email_activities": [],
+                    "attention_items": [],
+                    "quick_updates": [],
+                    "upcoming_events": []
+                },
+                "processing_summary": result.get("processing_summary", {})
+            }), 500
+        
+        # Get formatted dashboard data
+        dashboard_result = enhanced_email_service.get_email_activities(days_back=days_back, limit=max_results)
+        
+        return jsonify({
+            "success": True,
+            "data": dashboard_result.get("data", {}),
+            "summary": {
+                "total_emails": result.get("total_emails", 0),
+                "processed_count": result.get("processed_count", 0),
+                "companies_created": result.get("companies_created", 0),
+                "contacts_created": result.get("contacts_created", 0),
+                "jobs_created": result.get("jobs_created", 0)
+            },
+            "processing_summary": result.get("processing_summary", {}),
+            "recommendations": result.get("recommendations", []),
+            "processor_stats": result.get("processor_stats", {}),
+            "message": f"Enhanced processing: {result.get('processed_count', 0)} emails processed with intelligent routing"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in enhanced email sync: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'data': {
+                'emails_processed': 0,
+                'email_activities': [],
+                'attention_items': [],
+                'quick_updates': [],
+                'upcoming_events': []
+            },
+            'processing_summary': {'errors': 1}
+        }), 500
+
+@app.route('/api/emails/refresh', methods=['POST'])
+def refresh_emails_incremental():
+    """
+    Enhanced incremental email refresh - replaces old days_back approach
+    Uses Gmail History API for true incremental sync
+    """
+    try:
+        # Get request parameters
+        data = request.get_json() or {}
+        is_auto_refresh = data.get('is_auto_refresh', False)
+        user_email = data.get('user_email', 'me')
+        
+        logger.info(f"INCREMENTAL REFRESH: Starting for {user_email}, auto_refresh={is_auto_refresh}")
+        
+        # Use new enhanced email service with multi-stage processing
+        result = enhanced_email_service.refresh_emails_incremental(
+            user_email=user_email,
+            is_auto_refresh=is_auto_refresh
+        )
+        
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'sync_method': result['sync_method'],
+                'emails_processed': result['emails_processed'],
+                'new_emails': result['new_emails'],
+                'tokens_used': result['tokens_used'],
+                'duration_seconds': result['duration_seconds'],
+                'data': result.get('dashboard_data', {}),
+                'message': result['message']
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': result['error'],
+                'sync_method': result.get('sync_method', 'failed'),
+                'message': result['message']
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Error in incremental email refresh: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'sync_method': 'error',
+            'message': 'Failed to perform incremental refresh'
+        }), 500
+
+@app.route('/api/emails/threads', methods=['GET'])
+def get_email_threads():
+    """Get threaded dashboard data for email threads view"""
+    try:
+        # Get query parameters
+        days_back = request.args.get('days_back', 14, type=int)
+        limit = request.args.get('limit', 50, type=int)
+        user_email = request.args.get('user_email', 'me')
+        
+        logger.info(f"THREADS: Fetching threaded dashboard data (past {days_back} days, limit {limit})")
+        
+        # Use enhanced email service to get threaded dashboard data
+        result = enhanced_email_service.get_threaded_dashboard_data(
+            days_back=days_back, 
+            limit=limit, 
+            user_email=user_email
+        )
+        
+        if not result['success']:
+            return jsonify({
+                'success': False,
+                'error': result.get('error', 'Failed to fetch threaded data'),
+                'data': {
+                    'email_threads': [],
+                    'attention_items': [],
+                    'upcoming_events': [],
+                    'quick_updates': [],
+                    'summary_stats': {}
+                }
+            }), 500
+        
+        return jsonify({
+            'success': True,
+            'data': result.get('data', {}),
+            'message': f'Loaded {len(result.get("data", {}).get("email_threads", []))} email threads'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching email threads: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'data': {
+                'email_threads': [],
+                'attention_items': [],
+                'upcoming_events': [],
+                'quick_updates': [],
+                'summary_stats': {}
+            }
+        }), 500
+
+@app.route('/api/emails/threads/<thread_id>/emails', methods=['GET'])
+def get_thread_emails(thread_id):
+    """Get all emails within a specific thread"""
+    try:
+        logger.info(f"THREAD EMAILS: Fetching emails for thread {thread_id}")
+        
+        # Use enhanced email service to get thread emails
+        result = enhanced_email_service.get_thread_emails(thread_id)
+        
+        if not result['success']:
+            return jsonify({
+                'success': False,
+                'error': result.get('error', 'Failed to fetch thread emails'),
+                'data': []
+            }), 500
+        
+        return jsonify({
+            'success': True,
+            'data': result.get('data', []),
+            'message': f'Loaded {len(result.get("data", []))} emails from thread'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching thread emails for {thread_id}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'data': []
+        }), 500
+
 @app.route('/api/emails/activities', methods=['GET'])
 def get_email_activities():
     """Get recent email activities from database for dashboard"""
@@ -752,10 +1014,10 @@ def get_email_activities():
         days_back = request.args.get('days_back', 14, type=int)
         limit = request.args.get('limit', 50, type=int)
         
-        logger.info(f"DASHBOARD: Fetching stored emails from unified service (past {days_back} days, limit {limit})")
+        logger.info(f"DASHBOARD: Fetching stored emails from enhanced service (past {days_back} days, limit {limit})")
         
-        # Use unified email service for fast database retrieval
-        result = unified_email_service.get_email_activities(days_back=days_back, limit=limit)
+        # Use new enhanced email service with multi-stage processing
+        result = enhanced_email_service.get_email_activities(days_back=days_back, limit=limit)
         
         if not result['success']:
             return jsonify({
@@ -802,17 +1064,17 @@ def background_sync_emails():
         
         logger.info(f"BACKGROUND SYNC: Processing emails from past {days_back} days (max {max_results})")
         
-        # Use unified email service for background processing
-        result = unified_email_service.process_new_emails_background(
-            days_back=days_back,
-            max_results=max_results
+        # Use enhanced email service for background processing
+        result = enhanced_email_service.refresh_emails_incremental(
+            user_email="me",
+            is_auto_refresh=True
         )
         
         return jsonify({
             'success': result['success'],
-            'new_emails_count': result.get('new_emails_count', 0),
-            'processed_count': result.get('processed_count', 0),
-            'message': f'Background sync: {result.get("processed_count", 0)} new emails processed'
+            'new_emails_count': result.get('emails_processed', 0),
+            'processed_count': result.get('emails_processed', 0),
+            'message': f'Background sync: {result.get("emails_processed", 0)} new emails processed'
         })
         
     except Exception as e:
@@ -822,6 +1084,110 @@ def background_sync_emails():
             'error': str(e),
             'new_emails_count': 0,
             'processed_count': 0
+        }), 500
+
+# Recruiter tracking endpoints
+@app.route('/api/recruiters', methods=['GET'])
+def get_recruiters():
+    """Get list of tracked recruiters with interaction history"""
+    try:
+        with db_manager.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Get active recruiters with interaction counts
+            cursor.execute("""
+                SELECT 
+                    r.id, r.name, r.email, r.agency_name, r.recruiter_type,
+                    r.linkedin_url, r.interaction_count, r.last_interaction,
+                    r.rating, COUNT(DISTINCT et.thread_id) as active_threads,
+                    COUNT(DISTINCT rc.company_id) as companies_represented
+                FROM recruiters r
+                LEFT JOIN email_threads et ON r.id = et.recruiter_id AND et.status = 'active'
+                LEFT JOIN recruiter_companies rc ON r.id = rc.recruiter_id
+                WHERE r.is_active = true
+                GROUP BY r.id, r.name, r.email, r.agency_name, r.recruiter_type,
+                         r.linkedin_url, r.interaction_count, r.last_interaction, r.rating
+                ORDER BY r.last_interaction DESC
+                LIMIT 50
+            """)
+            
+            recruiters = []
+            for row in cursor.fetchall():
+                recruiters.append({
+                    'id': row[0],
+                    'name': row[1],
+                    'email': row[2],
+                    'agency_name': row[3],
+                    'recruiter_type': row[4],
+                    'linkedin_url': row[5],
+                    'interaction_count': row[6],
+                    'last_interaction': row[7].isoformat() if row[7] else None,
+                    'rating': row[8],
+                    'active_threads': row[9],
+                    'companies_represented': row[10]
+                })
+            
+            return jsonify({
+                'success': True,
+                'recruiters': recruiters,
+                'total_count': len(recruiters)
+            })
+            
+    except Exception as e:
+        logger.error(f"Error fetching recruiters: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'recruiters': []
+        }), 500
+
+@app.route('/api/sync/status', methods=['GET'])
+def get_sync_status():
+    """Get current sync status and metadata"""
+    try:
+        user_email = request.args.get('user_email', 'me')
+        
+        with db_manager.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT 
+                    last_sync_timestamp, last_gmail_date, sync_status,
+                    processed_count, tokens_used, error_message, updated_at
+                FROM sync_metadata
+                WHERE user_email = %s
+            """, (user_email,))
+            
+            row = cursor.fetchone()
+            
+            if row:
+                return jsonify({
+                    'success': True,
+                    'sync_metadata': {
+                        'last_sync_timestamp': row[0].isoformat() if row[0] else None,
+                        'last_gmail_date': row[1],
+                        'sync_status': row[2],
+                        'processed_count': row[3],
+                        'tokens_used': row[4],
+                        'error_message': row[5],
+                        'updated_at': row[6].isoformat() if row[6] else None
+                    }
+                })
+            else:
+                return jsonify({
+                    'success': True,
+                    'sync_metadata': {
+                        'last_sync_timestamp': None,
+                        'sync_status': 'never_synced',
+                        'message': 'No sync history found'
+                    }
+                })
+                
+    except Exception as e:
+        logger.error(f"Error fetching sync status: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
         }), 500
 
 # Old email helper functions are now replaced by the unified service
@@ -847,20 +1213,33 @@ def health_check():
     # Test Gmail connection
     gmail_status = False
     try:
-        from services.gmail_service import GmailService
-        gmail = GmailService()
+        from services.secure_gmail_service import SecureGmailService
+        gmail = SecureGmailService()
         gmail_status = gmail.test_connection()
     except Exception as e:
         logger.error(f"Gmail connection test failed: {e}")
         gmail_status = False
     
+    # Test enhanced email processing system
+    email_processing_status = 'healthy'
+    try:
+        # Use the openai_processor health check method
+        health_check = enhanced_email_service.openai_processor.health_check()
+        if health_check.get('status') != 'healthy':
+            email_processing_status = 'degraded'
+    except Exception as e:
+        logger.error(f"Email processing health check failed: {e}")
+        email_processing_status = 'unhealthy'
+    
     return jsonify({
         'status': 'healthy',
-        'timestamp': datetime.utcnow().isoformat(),
+        'timestamp': datetime.now().isoformat(),
         'lm_studio_connected': lm_studio.test_connection(),
         'gmail_connected': gmail_status,
         'database_status': db_status,
-        'database_type': 'postgresql' if db_config.is_postgresql() else 'sqlite'
+        'database_type': 'postgresql' if db_config.is_postgresql() else 'sqlite',
+        'email_processing_status': email_processing_status,
+        'email_architecture': 'multi_stage_groq_enhanced'
     })
 
 if __name__ == '__main__':
@@ -872,14 +1251,17 @@ if __name__ == '__main__':
     
     # Test Gmail connection
     try:
-        from services.gmail_service import GmailService
-        gmail = GmailService()
+        from services.secure_gmail_service import SecureGmailService
+        gmail = SecureGmailService()
         if gmail.test_connection():
             logger.info("✅ Gmail connected successfully")
         else:
             logger.warning("⚠️ Gmail not connected - check credentials")
     except Exception as e:
         logger.warning(f"⚠️ Gmail connection failed: {e}")
+    
+    # Start background email sync
+    background_sync.start()
     
     logger.info("🚀 Starting Interactive Resume Builder API")
     logger.info("📝 Frontend: http://localhost:3000")
