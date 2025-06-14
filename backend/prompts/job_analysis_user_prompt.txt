@@ -1,0 +1,7 @@
+Analyze this job posting to provide strategic resume optimization guidance:
+
+<job_posting>
+{job_description}
+</job_posting>
+
+Focus on competitive positioning and actionable resume improvement strategies. Return only the JSON object.

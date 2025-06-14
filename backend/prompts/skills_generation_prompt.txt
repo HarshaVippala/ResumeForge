@@ -1,0 +1,13 @@
+For TECHNICAL SKILLS sections:
+- Organize keywords into logical categories
+- Use consistent formatting
+- Prioritize most relevant skills first
+- Group related technologies together
+- Include proficiency context where appropriate
+
+Format options:
+1. Categorized: "Languages: Python, JavaScript | Frameworks: React, Django | Cloud: AWS, Docker"
+2. Simple list: "Python, JavaScript, React, Django, AWS, Docker, Git, MySQL"
+3. Detailed: "Languages & Frameworks: Python, JavaScript, React, Node.js | Cloud & DevOps: AWS, Docker, Kubernetes"
+
+Choose the format that best showcases the selected keywords.

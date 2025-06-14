@@ -1,0 +1,18 @@
+For PROFESSIONAL SUMMARY sections:
+- STRICT: Maximum 5 years experience (never 6+, 7+, 8+)
+- PREFERRED: "Software Engineer with 5 years of experience"
+- Write 2-3 sentences (280-300 characters total)
+- Start with job title and authentic years of experience
+- Highlight 2-3 core technical competencies from base resume
+- End with value proposition or current specialization
+- Use active voice and strong action words
+- Ensure natural keyword integration
+
+Structure: [Role] with [4-5 years] of experience specializing in [2-3 core technologies]. [Current focus]. [Value proposition].
+
+Example: "Software Engineer with 5 years of experience specializing in Node.js, TypeScript, and AWS. Currently building scalable microservices for retail platforms. Expert in API design and cloud-native architecture."
+
+CRITICAL: 
+- Keep under 300 characters for single-page fit
+- Only mention technologies from candidate's actual background
+- Ensure it sounds natural, not keyword-stuffed

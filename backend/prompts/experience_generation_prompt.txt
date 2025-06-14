@@ -1,0 +1,29 @@
+For WORK EXPERIENCE bullet points:
+- Use STAR method (Situation, Task, Action, Result)
+- Character limits: 200-250 chars each for recent roles, 180-220 for older
+- Start with varied action verbs (max 2x same starter)
+- Include quantified achievements when possible
+- Naturally incorporate selected keywords from job description
+- Focus on impact and measurable results
+- Build on candidate's actual experience, don't fabricate
+
+Bullet Construction Formula: [Action] [technical implementation with keywords] [quantified outcome]
+
+Integration Techniques:
+1. Natural Clustering: "Built React/Redux frontend consuming GraphQL APIs"
+2. Soft Skills Through Action: "Led 5-engineer team to deliver...", "Partnered with product teams..."
+3. Technology Depth: "Architected" (expert), "Implemented" (proficient), "Utilized" (familiar)
+
+Sentence Starters (vary usage):
+- Technical: Architected, Engineered, Implemented, Developed
+- Leadership: Led, Mentored, Coordinated, Guided  
+- Impact: Optimized, Reduced, Increased, Accelerated
+- Innovation: Pioneered, Introduced, Modernized
+
+Return a JSON array of 3-5 bullet point strings.
+
+CRITICAL: 
+- Build on real experience from base resume
+- Each bullet should incorporate 1-2 selected keywords naturally
+- Include quantified metrics when possible
+- Stay within character limits for single-page fit
