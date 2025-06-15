@@ -23,6 +23,12 @@ from services.lm_studio_client import LMStudioClient
 from services.keyword_extractor import KeywordExtractor
 from services.database import DatabaseManager
 from services.supabase_manager import SupabaseDatabaseManager
+from services.linkedin_parser import LinkedInParser
+from services.llm_factory import LLMFactory
+
+# Import security components
+from middleware.secure_auth import require_auth, optional_auth, auth
+from secure_database import SecureDatabase
 # Legacy unified service removed
 from services.resume import (
     SectionGenerator,
@@ -44,6 +50,9 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Initialize secure database
+secure_db = SecureDatabase()
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -77,6 +86,7 @@ lm_studio = LMStudioClient()
 keyword_extractor = KeywordExtractor(lm_studio)
 section_generator = SectionGenerator(lm_studio)
 resume_processor = ResumeProcessor()
+linkedin_parser = LinkedInParser()
 
 # Initialize database manager based on configuration
 if db_config.is_postgresql():
@@ -205,6 +215,146 @@ def analyze_job():
         
     except Exception as e:
         logger.error(f"Error in analyze_job: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/parse-linkedin-job', methods=['POST'])
+def parse_linkedin_job():
+    """
+    Parse LinkedIn job URL and extract job information
+    
+    Expected payload:
+    {
+        "jobUrl": "https://www.linkedin.com/jobs/view/12345/"
+    }
+    """
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+            
+        job_url = data.get('jobUrl', '').strip()
+        
+        if not job_url:
+            return jsonify({'error': 'Missing required field: jobUrl'}), 400
+        
+        logger.info(f"Parsing LinkedIn job URL: {job_url}")
+        
+        # Parse the LinkedIn job URL
+        job_data = linkedin_parser.parse_job_url(job_url)
+        
+        if not job_data.success:
+            return jsonify({
+                'success': False,
+                'error': job_data.error
+            }), 400
+        
+        return jsonify({
+            'success': True,
+            'company': job_data.company,
+            'role': job_data.role,
+            'jobDescription': job_data.description
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in parse_linkedin_job: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/llm-providers', methods=['GET'])
+def get_llm_providers():
+    """
+    Get list of available LLM providers and their status
+    """
+    try:
+        providers = LLMFactory.list_available_providers()
+        current_provider = os.getenv("DEFAULT_LLM_PROVIDER", "lmstudio")
+        
+        return jsonify({
+            'success': True,
+            'providers': providers,
+            'current_provider': current_provider
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting LLM providers: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/analyze-job-with-provider', methods=['POST'])
+def analyze_job_with_provider():
+    """
+    Analyze job description with specified LLM provider
+    
+    Expected payload:
+    {
+        "company": "Google",
+        "role": "Senior Software Engineer", 
+        "jobDescription": "...",
+        "provider": "openai"
+    }
+    """
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+            
+        company = data.get('company', '').strip()
+        role = data.get('role', '').strip()
+        job_description = data.get('jobDescription', '').strip()
+        provider = data.get('provider', 'lmstudio').strip()
+        # API keys are now only read from environment variables
+        
+        if not all([company, role, job_description]):
+            return jsonify({'error': 'Missing required fields: company, role, jobDescription'}), 400
+        
+        logger.info(f"Analyzing job with {provider}: {company} - {role}")
+        
+        # Create LLM service for the specified provider
+        try:
+            llm_service = LLMFactory.create_service(provider)
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 400
+        
+        # Test connection first
+        if not llm_service.is_available():
+            return jsonify({
+                'error': f'{provider} service is not available. Please check configuration.'
+            }), 503
+        
+        # Analyze job description
+        analysis_response = llm_service.analyze_job_description(job_description, role)
+        
+        if not analysis_response.success:
+            return jsonify({
+                'error': f'Analysis failed: {analysis_response.error}'
+            }), 500
+        
+        # Parse the analysis content if it's a JSON string
+        try:
+            if isinstance(analysis_response.content, str):
+                import json
+                analysis_data = json.loads(analysis_response.content)
+            else:
+                analysis_data = analysis_response.content
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse analysis JSON: {e}")
+            return jsonify({
+                'error': 'Failed to parse analysis response from LLM provider'
+            }), 500
+        
+        # Create session record (store the raw content for database)
+        session_id = db_manager.create_session(company, role, job_description, analysis_data)
+        
+        return jsonify({
+            'success': True,
+            'session_id': session_id,
+            'analysis': analysis_data,  # Return parsed object, not string
+            'provider_used': provider,
+            'usage': analysis_response.usage
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in analyze_job_with_provider: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/generate-section', methods=['POST'])
@@ -1191,6 +1341,180 @@ def get_sync_status():
         }), 500
 
 # Old email helper functions are now replaced by the unified service
+
+# =====================================
+# AUTHENTICATION ENDPOINTS
+# =====================================
+
+@app.route('/api/auth/login', methods=['POST'])
+def login():
+    """Secure user login with JWT token generation"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '')
+        
+        if not email or not password:
+            return jsonify({'error': 'Email and password are required'}), 400
+        
+        # Check rate limiting
+        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+        if auth.is_rate_limited(client_ip):
+            return jsonify({'error': 'Too many login attempts. Please try again later.'}), 429
+        
+        # Authenticate user
+        user = secure_db.get_user_by_email(email)
+        if not user or not secure_db.verify_password(password, user['password_hash']):
+            auth.record_failed_attempt(client_ip)
+            secure_db.log_security_event('LOGIN_FAILED', None, client_ip, f'Invalid credentials for {email}')
+            return jsonify({'error': 'Invalid email or password'}), 401
+        
+        # Generate JWT token
+        token = auth.generate_token({
+            'id': user['id'],
+            'email': user['email'],
+            'is_admin': user.get('is_admin', False)
+        })
+        
+        # Clear failed attempts and log successful login
+        auth.clear_failed_attempts(client_ip)
+        secure_db.log_security_event('LOGIN_SUCCESS', user['id'], client_ip)
+        
+        return jsonify({
+            'success': True,
+            'token': token,
+            'user': {
+                'id': user['id'],
+                'email': user['email'],
+                'is_admin': user.get('is_admin', False)
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/auth/signup', methods=['POST'])
+def signup():
+    """User registration with secure password hashing"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        password = data.get('password', '')
+        name = data.get('name', '')
+        
+        if not email or not password:
+            return jsonify({'error': 'Email and password are required'}), 400
+        
+        # Validate email format
+        import re
+        email_regex = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+        if not re.match(email_regex, email):
+            return jsonify({'error': 'Invalid email format'}), 400
+        
+        # Validate password strength
+        if len(password) < 8:
+            return jsonify({'error': 'Password must be at least 8 characters long'}), 400
+        
+        if not re.search(r'(?=.*[a-z])(?=.*[A-Z])(?=.*\d)', password):
+            return jsonify({'error': 'Password must contain uppercase, lowercase, and number'}), 400
+        
+        # Check if user already exists
+        existing_user = secure_db.get_user_by_email(email)
+        if existing_user:
+            return jsonify({'error': 'User with this email already exists'}), 409
+        
+        # Create new user
+        user_id = secure_db.create_user(email, password)
+        
+        # Generate JWT token
+        token = auth.generate_token({
+            'id': user_id,
+            'email': email,
+            'is_admin': False
+        })
+        
+        # Log successful registration
+        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+        secure_db.log_security_event('USER_REGISTERED', user_id, client_ip)
+        
+        return jsonify({
+            'success': True,
+            'token': token,
+            'user': {
+                'id': user_id,
+                'email': email,
+                'is_admin': False
+            }
+        }), 201
+        
+    except Exception as e:
+        logger.error(f"Signup error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/auth/validate', methods=['GET'])
+@require_auth
+def validate_token():
+    """Validate JWT token and return user data"""
+    try:
+        return jsonify({
+            'success': True,
+            'user': {
+                'id': request.user.get('user_id'),
+                'email': request.user.get('email'),
+                'is_admin': request.user.get('is_admin', False)
+            }
+        })
+    except Exception as e:
+        logger.error(f"Token validation error: {e}")
+        return jsonify({'error': 'Token validation failed'}), 401
+
+@app.route('/api/auth/logout', methods=['POST'])
+@require_auth
+def logout():
+    """Logout user and invalidate token"""
+    try:
+        user_id = request.user.get('user_id')
+        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
+        
+        # Log logout event
+        secure_db.log_security_event('LOGOUT', user_id, client_ip)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Logged out successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Logout error: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/auth/refresh', methods=['POST'])
+@require_auth
+def refresh_token():
+    """Refresh JWT token"""
+    try:
+        user_data = {
+            'id': request.user.get('user_id'),
+            'email': request.user.get('email'),
+            'is_admin': request.user.get('is_admin', False)
+        }
+        
+        # Generate new token
+        new_token = auth.generate_token(user_data)
+        
+        return jsonify({
+            'success': True,
+            'token': new_token
+        })
+        
+    except Exception as e:
+        logger.error(f"Token refresh error: {e}")
+        return jsonify({'error': 'Token refresh failed'}), 401
+
+# =====================================
+# HEALTH CHECK ENDPOINT
+# =====================================
 
 @app.route('/health', methods=['GET'])
 def health_check():

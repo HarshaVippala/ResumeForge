@@ -9,7 +9,7 @@ export const apiConfig = {
   
   // Authentication settings
   auth: {
-    enabled: process.env.NEXT_PUBLIC_AUTH_ENABLED === 'true',
+    enabled: true, // Always enabled for secure authentication
     domain: process.env.NEXT_PUBLIC_AUTH_DOMAIN || '',
     clientId: process.env.NEXT_PUBLIC_AUTH_CLIENT_ID || '',
   },
@@ -51,6 +51,13 @@ export const apiConfig = {
     
     // Email Service
     sendEmail: '/api/send-email',
+    
+    // Authentication
+    login: '/api/auth/login',
+    signup: '/api/auth/signup',
+    logout: '/api/auth/logout',
+    validate: '/api/auth/validate',
+    refresh: '/api/auth/refresh',
   }
 }
 

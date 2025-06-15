@@ -29,113 +29,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Check for existing session on mount
   useEffect(() => {
-    if (apiConfig.auth.enabled) {
-      checkSession()
-    } else {
-      setIsLoading(false)
-    }
+    checkPersonalAccess()
   }, [])
 
-  const checkSession = async () => {
+  // Simple personal access check
+  const checkPersonalAccess = () => {
     try {
-      const storedToken = localStorage.getItem('auth_token')
-      if (storedToken) {
-        // Validate token with backend
-        const response = await fetch(`${apiConfig.baseUrl}/api/auth/validate`, {
-          headers: {
-            'Authorization': `Bearer ${storedToken}`,
-          },
-        })
+      const accessGranted = localStorage.getItem('harsha_access')
+      const accessTime = localStorage.getItem('access_time')
+      
+      if (accessGranted === 'granted' && accessTime) {
+        // Check if access is still valid (24 hours)
+        const accessDate = new Date(accessTime)
+        const now = new Date()
+        const hoursDiff = (now.getTime() - accessDate.getTime()) / (1000 * 60 * 60)
         
-        if (response.ok) {
-          const userData = await response.json()
-          setUser(userData.user)
-          setToken(storedToken)
+        if (hoursDiff < 24) {
+          // Still valid
+          setUser({
+            id: 'harsha-personal',
+            email: 'harsha@personal.dev',
+            name: 'Harsha Vippala'
+          })
+          setToken('personal-access-granted')
         } else {
-          // Token is invalid, clear it
-          localStorage.removeItem('auth_token')
+          // Expired, clear access
+          localStorage.removeItem('harsha_access')
+          localStorage.removeItem('access_time')
         }
       }
     } catch (error) {
-      console.error('Session check failed:', error)
+      console.error('Personal access check failed:', error)
     } finally {
       setIsLoading(false)
     }
   }
 
   const login = async (email: string, password: string) => {
-    try {
-      const response = await fetch(`${apiConfig.baseUrl}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Login failed')
-      }
-
-      const data = await response.json()
-      
-      // Store token
-      localStorage.setItem('auth_token', data.token)
-      setToken(data.token)
-      setUser(data.user)
-    } catch (error) {
-      console.error('Login error:', error)
-      throw error
-    }
+    // Simple personal access - not used in new UI
+    localStorage.setItem('harsha_access', 'granted')
+    localStorage.setItem('access_time', new Date().toISOString())
+    
+    setUser({
+      id: 'harsha-personal',
+      email: 'harsha@personal.dev',
+      name: 'Harsha Vippala'
+    })
+    setToken('personal-access-granted')
   }
 
   const signup = async (email: string, password: string, name?: string) => {
-    try {
-      const response = await fetch(`${apiConfig.baseUrl}/api/auth/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password, name }),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Signup failed')
-      }
-
-      const data = await response.json()
-      
-      // Store token
-      localStorage.setItem('auth_token', data.token)
-      setToken(data.token)
-      setUser(data.user)
-    } catch (error) {
-      console.error('Signup error:', error)
-      throw error
-    }
+    // Same as login for personal use
+    return login(email, password)
   }
 
   const logout = async () => {
-    try {
-      // Call logout endpoint if available
-      if (token) {
-        await fetch(`${apiConfig.baseUrl}/api/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        })
-      }
-    } catch (error) {
-      console.error('Logout error:', error)
-    } finally {
-      // Clear local state regardless of API call result
-      localStorage.removeItem('auth_token')
-      setToken(null)
-      setUser(null)
-    }
+    // Clear personal access
+    localStorage.removeItem('harsha_access')
+    localStorage.removeItem('access_time')
+    setToken(null)
+    setUser(null)
   }
 
   const getToken = () => {
