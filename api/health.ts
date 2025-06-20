@@ -23,17 +23,20 @@ export default async function handler(
 
     const allHealthy = openaiStatus === 'connected' && supabaseStatus === 'connected';
 
-    // Basic health response
+    // Health response compatible with ServiceStatus component
     const healthStatus = {
       status: allHealthy ? 'healthy' : 'degraded',
       timestamp: new Date().toISOString(),
+      lm_studio_connected: openaiStatus === 'connected',
+      database_status: supabaseStatus,
+      database_type: 'postgresql' as const,
+      // Additional info for debugging
       environment: process.env.NODE_ENV || 'development',
       version: '2.0.0-ts',
       services: {
         api: 'operational',
         openai: openaiStatus,
-        supabase: supabaseStatus,
-        database_type: 'postgresql'
+        supabase: supabaseStatus
       },
       migration_status: 'in_progress'
     };
