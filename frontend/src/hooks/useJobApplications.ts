@@ -41,7 +41,7 @@ export function useJobApplications(): UseJobApplicationsReturn {
 
       // For personal use, we'll use the applications API
       const apiUrl = process.env.NODE_ENV === 'development' 
-        ? 'http://localhost:5001/api/applications'
+        ? 'http://localhost:3000/api/applications'
         : '/api/applications'
       
       const response = await fetch(apiUrl, {

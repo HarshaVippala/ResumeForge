@@ -5,7 +5,7 @@ Analyzes job descriptions and extracts categorized keywords
 
 import logging
 from typing import Dict, List, Any, Optional
-from .lm_studio_client import LMStudioClient
+from .llm_factory import LLMFactory
 from .resume.resume_parser import ResumeParser
 from .resume.prompt_manager import PromptManager
 from .resume.strategic_context import (
@@ -19,8 +19,9 @@ logger = logging.getLogger(__name__)
 class KeywordExtractor:
     """Extract and categorize keywords from job descriptions"""
     
-    def __init__(self, lm_studio_client: Optional[LMStudioClient] = None):
-        self.lm_studio = lm_studio_client or LMStudioClient()
+    def __init__(self, llm_service=None):
+        # Use provided LLM service or create default
+        self.llm_service = llm_service or LLMFactory.create_default_service()
         self.resume_parser = ResumeParser()
         self.prompt_manager = PromptManager()
         
@@ -43,12 +44,8 @@ class KeywordExtractor:
         Returns:
             StrategicContext object with rich analysis
         """
-        # Test LM Studio connection
-        if not self.lm_studio.test_connection():
-            logger.warning("LM Studio not available, using basic extraction")
-            return self._create_basic_strategic_context(job_description, role)
-        
-        logger.info("Using LM Studio for strategic keyword extraction")
+        # Try AI extraction first
+        logger.info(f"Using {type(self.llm_service).__name__} for strategic keyword extraction")
         ai_result = self._extract_with_ai(job_description, role)
         
         if ai_result:
@@ -62,37 +59,35 @@ class KeywordExtractor:
         job_description: str,
         role: str
     ) -> Optional[Dict[str, Any]]:
-        """Extract keywords using LM Studio AI model with Resume_Tailored quality"""
+        """Extract keywords using AI model"""
         
         # Load prompts from external files
         system_prompt = self.prompt_manager.get_job_analysis_system_prompt()
         user_prompt = self.prompt_manager.get_job_analysis_user_prompt(job_description)
 
         try:
-            # Load the JSON schema
-            import os
-            schema_path = os.path.join(os.path.dirname(__file__), '..', 'schemas', 'strategic_analysis_schema.json')
-            json_schema = None
-            if os.path.exists(schema_path):
+            # Combine prompts for LLM service
+            full_prompt = f"{system_prompt}\n\n{user_prompt}"
+            
+            # Use the generic LLM service interface
+            response = self.llm_service.analyze_job_description(job_description, role)
+            
+            if response.success and response.content:
+                # Parse the response content
                 import json
-                with open(schema_path, 'r') as f:
-                    json_schema = json.load(f)
-                    logger.info("Loaded strategic analysis JSON schema")
-            
-            result = self.lm_studio.generate_structured_response(
-                system_prompt=system_prompt,
-                user_prompt=user_prompt,
-                expected_format="JSON",
-                max_tokens=2500,
-                temperature=0.3,
-                json_schema=json_schema
-            )
-            
-            if result and self._validate_extraction_result(result):
-                logger.info("Successfully extracted keywords with AI")
-                return result
+                if isinstance(response.content, str):
+                    result = json.loads(response.content)
+                else:
+                    result = response.content
+                
+                if result and self._validate_extraction_result(result):
+                    logger.info("Successfully extracted keywords with AI")
+                    return result
+                else:
+                    logger.error("AI extraction failed validation")
+                    return None
             else:
-                logger.error("AI extraction failed validation")
+                logger.error(f"LLM service failed: {response.error}")
                 return None
                 
         except Exception as e:

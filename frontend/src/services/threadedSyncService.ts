@@ -50,6 +50,11 @@ class ThreadedSyncService {
    * Initialize the threaded sync service
    */
   initialize() {
+    if (process.env.NEXT_PUBLIC_ENABLE_BACKGROUND_SYNC !== 'true') {
+      console.log('🚫 Threaded Sync Service is disabled by feature flag.')
+      return
+    }
+
     if (this.isInitialized) {
       return
     }

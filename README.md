@@ -1,6 +1,6 @@
-# JobTracker
+# Resume Builder v2
 
-A comprehensive job search and resume management platform. Creates tailored resumes for specific jobs with keyword optimization, tracks applications, and manages job search workflow - figured others might find it useful too.
+A personal AI-powered resume builder that creates tailored resumes for specific job applications using OpenAI and modern web technologies.
 
 ## 🚀 What it does
 
@@ -29,24 +29,26 @@ A comprehensive job search and resume management platform. Creates tailored resu
 
 ### Technology Stack
 - **Frontend**: Next.js 15, TypeScript, Tailwind CSS, Zustand
-- **Backend**: Python Flask, RESTful API
-- **Database**: PostgreSQL (Supabase), SQLite for development
-- **Deployment**: Vercel (frontend), local deployment (backend)
+- **API**: TypeScript, Vercel Functions
+- **AI**: OpenAI GPT-4
+- **Database**: PostgreSQL (Supabase)
+- **Deployment**: Vercel (unified frontend + API)
 
 ### System Design
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │                 │    │                 │    │                 │
-│   Frontend      │◄──►│   Backend API   │◄──►│   Database      │
-│   (Next.js)     │    │   (Flask)       │    │   (PostgreSQL)  │
+│   Frontend      │◄──►│   API Functions │◄──►│   Database      │
+│   (Next.js)     │    │   (TypeScript)  │    │   (Supabase)    │
 │                 │    │                 │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
-         │                       │                       │
-    ┌────▼────┐             ┌────▼────┐             ┌────▼────┐
-    │  Vercel │             │  Local  │             │Supabase │
-    │Hosting  │             │Server   │             │ Cloud   │
-    └─────────┘             └─────────┘             └─────────┘
+         └───────────┬───────────┘                       │
+                     │                                   │
+                ┌────▼────┐                         ┌────▼────┐
+                │ Vercel  │                         │Supabase │
+                │Platform │                         │ Cloud   │
+                └─────────┘                         └─────────┘
 ```
 
 ### Core Components

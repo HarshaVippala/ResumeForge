@@ -26,14 +26,20 @@ export function ScrapingStatusIndicator({ className }) {
 
   useEffect(() => {
     const fetchRealScrapingStatus = async () => {
+      // Check if job scraper feature is enabled
+      if (process.env.NEXT_PUBLIC_ENABLE_JOB_SCRAPER !== 'true') {
+        console.log('🚫 Job Scraper is disabled by feature flag.')
+        return
+      }
+
       setIsLoading(true)
       setError(null)
       
       try {
         // Make parallel API calls to get comprehensive scraping status
         const [statsResponse, platformsResponse] = await Promise.all([
-          fetch('http://localhost:5001/api/scraping/stats'),
-          fetch('http://localhost:5001/api/scraping/platforms')
+          fetch('http://localhost:3000/api/scraping/stats'),
+          fetch('http://localhost:3000/api/scraping/platforms')
         ])
 
         if (!statsResponse.ok || !platformsResponse.ok) {

@@ -122,7 +122,7 @@ class SecureGmailService:
         
         # Build Gmail service
         self.service = build('gmail', 'v1', credentials=creds)
-        logger.info("Secure Gmail service initialized successfully")
+        logger.debug("Secure Gmail service initialized successfully")
     
     def _save_token(self, credentials: Credentials) -> None:
         """Save token data to secure file"""
@@ -157,7 +157,7 @@ class SecureGmailService:
             
         try:
             profile = self.service.users().getProfile(userId='me').execute()
-            logger.info(f"Gmail connection successful. Email: {profile.get('emailAddress')}")
+            logger.debug(f"Gmail connection successful. Email: {profile.get('emailAddress')}")
             return True
         except Exception as e:
             logger.error(f"Gmail connection failed: {e}")

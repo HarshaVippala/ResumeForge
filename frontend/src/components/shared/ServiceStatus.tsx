@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useBackgroundSync } from '@/hooks/useBackgroundSync'
+import { getApiUrl, apiConfig } from '@/config/api.config'
 
 interface HealthStatus {
   status: string
@@ -34,15 +35,18 @@ export function ServiceStatus({ className }: ServiceStatusProps) {
   const [lastCheck, setLastCheck] = useState<Date | null>(null)
   const [error, setError] = useState<string | null>(null)
   
-  // Get email sync status
-  const { status: syncStatus, lastUpdated: syncLastUpdated, unreadCount, isLoading: isSyncing } = useBackgroundSync()
+  // Get email sync status - only if feature is enabled
+  const { status: syncStatus, lastUpdated: syncLastUpdated, unreadCount, isLoading: isSyncing } = 
+    apiConfig.features.backgroundSync
+      ? useBackgroundSync()
+      : { status: 'disabled', lastUpdated: null, unreadCount: 0, isLoading: false }
 
   const fetchHealth = async (manual = false) => {
     if (manual) setIsLoading(true)
     setError(null)
 
     try {
-      const response = await fetch('http://localhost:5001/health', {
+      const response = await fetch(getApiUrl('/api/health'), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -111,8 +115,9 @@ export function ServiceStatus({ className }: ServiceStatusProps) {
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      {/* Email Sync Status */}
-      <div className="flex items-center gap-1 group relative">
+      {/* Email Sync Status - only show if feature is enabled */}
+      {apiConfig.features.backgroundSync && (
+        <div className="flex items-center gap-1 group relative">
         <Mail className="h-4 w-4 text-muted-foreground" />
         {isSyncing ? (
           <RefreshCw className="h-3 w-3 text-blue-500 animate-spin" />
@@ -156,6 +161,7 @@ export function ServiceStatus({ className }: ServiceStatusProps) {
           </div>
         </div>
       </div>
+      )}
 
       {/* LMStudio Status */}
       <div className="flex items-center gap-1 group relative">
@@ -211,10 +217,10 @@ export function ServiceStatus({ className }: ServiceStatusProps) {
       {/* Overall Status Badge */}
       {health && (
         <Badge 
-          variant={health.lm_studio_connected && health.database_status === 'connected' && syncStatus !== 'error' ? 'default' : 'destructive'}
+          variant={health.lm_studio_connected && health.database_status === 'connected' && (syncStatus !== 'error' || !apiConfig.features.backgroundSync) ? 'default' : 'destructive'}
           className="text-xs"
         >
-          {health.lm_studio_connected && health.database_status === 'connected' && syncStatus !== 'error' ? 'Online' : 'Issues'}
+          {health.lm_studio_connected && health.database_status === 'connected' && (syncStatus !== 'error' || !apiConfig.features.backgroundSync) ? 'Online' : 'Issues'}
         </Badge>
       )}
 

@@ -164,7 +164,7 @@ export function KeywordIntelligence({ analysis, selectedKeywords, onKeywordToggl
 
         <KeywordSection
           title="Technical Skills"
-          keywords={analysis.keywords?.technical_skills || []}
+          keywords={analysis.keywords?.technical_skills || (analysis as any).technical_skills || []}
           icon={CheckCircle}
           color="text-blue-500"
           description=""
@@ -172,7 +172,7 @@ export function KeywordIntelligence({ analysis, selectedKeywords, onKeywordToggl
 
         <KeywordSection
           title="Soft Skills"
-          keywords={analysis.keywords?.soft_skills || []}
+          keywords={analysis.keywords?.soft_skills || (analysis as any).soft_skills || []}
           icon={CheckCircle}
           color="text-purple-500"
           description=""

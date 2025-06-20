@@ -204,3 +204,83 @@ export interface SortOptions {
   field: 'created_at' | 'company' | 'role' | 'final_score' | 'application_date'
   direction: 'asc' | 'desc'
 }
+
+// API Response Types
+export interface LlmProvider {
+  name: string
+  display_name: string
+  available: boolean
+  requires_api_key: boolean
+}
+
+export interface ProvidersResponse {
+  success: boolean
+  providers: LlmProvider[]
+  current_provider?: string
+}
+
+export interface AnalyzeJobResponse {
+  success: boolean
+  analysis?: {
+    technical_skills: string[]
+    soft_skills: string[]
+    experience_requirements: string[]
+    programming_languages: string[]
+    frameworks_libraries_tools: string[]
+    methodologies_concepts: string[]
+    critical_keywords: string[]
+    job_info?: {
+      seniority: string
+      department: string
+    }
+  }
+  session_id?: string
+  message?: string
+  error?: string
+}
+
+export interface ParseLinkedInJobResponse {
+  success: boolean
+  jobDescription?: string
+  company?: string
+  role?: string
+  error?: string
+}
+
+export interface GenerateResumeResponse {
+  success: boolean
+  message?: string
+  tailored_resume?: {
+    summary: string
+    experience: Array<{
+      title: string
+      company: string
+      duration: string
+      achievements: string[]
+    }>
+    skills: {
+      technical: string[]
+      languages: string[]
+      frameworks: string[]
+      tools: string[]
+    }
+    education: Array<{
+      degree: string
+      institution: string
+      year: string
+    }>
+  }
+  insights?: {
+    keyword_coverage: number
+    match_strength: string
+    improvements: string[]
+  }
+  error?: string
+}
+
+export interface ExportResumeResponse {
+  success: boolean
+  file_url?: string
+  filename?: string
+  error?: string
+}

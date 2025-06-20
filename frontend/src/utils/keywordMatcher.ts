@@ -16,13 +16,14 @@ export function extractAllJDKeywords(analysis: any): string[] {
   
   const allKeywords = [
     ...(analysis.critical_keywords || []),
-    ...(analysis.keywords?.technical_skills || []),
-    ...(analysis.keywords?.soft_skills || []),
-    ...(analysis.keywords?.experience_requirements || []),
+    // Handle both nested (JobAnalysis interface) and flat (backend response) structures
+    ...(analysis.keywords?.technical_skills || analysis.technical_skills || []),
+    ...(analysis.keywords?.soft_skills || analysis.soft_skills || []),
+    ...(analysis.keywords?.experience_requirements || analysis.experience_requirements || []),
     ...(analysis.keywords?.nice_to_have || []),
-    ...(analysis.categories?.programming_languages || []),
-    ...(analysis.categories?.frameworks_tools || []),
-    ...(analysis.categories?.methodologies || [])
+    ...(analysis.categories?.programming_languages || analysis.programming_languages || []),
+    ...(analysis.categories?.frameworks_tools || analysis.frameworks_libraries_tools || []),
+    ...(analysis.categories?.methodologies || analysis.methodologies_concepts || [])
   ]
   
   return [...new Set(allKeywords)] // Remove duplicates

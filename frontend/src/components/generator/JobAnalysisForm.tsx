@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { 
   Building2, 
   User, 
@@ -12,9 +13,13 @@ import {
   Loader, 
   CheckCircle,
   Globe,
-  Sparkles
+  Sparkles,
+  Settings,
+  Brain,
+  Zap
 } from 'lucide-react'
-import type { JobAnalysis } from '@/types'
+import type { JobAnalysis, ProvidersResponse, LlmProvider, AnalyzeJobResponse, ParseLinkedInJobResponse } from '@/types'
+import { apiConfig } from '@/config/api.config'
 
 interface JobAnalysisFormProps {
   onComplete: (analysis: JobAnalysis) => void
@@ -29,15 +34,45 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
   })
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState('')
+  const [selectedProvider, setSelectedProvider] = useState('openai') // Default to openai since it's working
+  const [providers, setProviders] = useState<LlmProvider[]>([])
+  const [loadingProviders, setLoadingProviders] = useState(true)
 
-  const handleInputChange = (field: string, value: string) => {
+  // Load available LLM providers on component mount
+  useEffect(() => {
+    const loadProviders = async () => {
+      try {
+        const response = await fetch(`${apiConfig.baseUrl}${apiConfig.endpoints.llmProviders}`)
+        const data = await response.json() as ProvidersResponse
+        
+        if (data.success) {
+          setProviders(data.providers)
+          setSelectedProvider(data.current_provider || 'lmstudio')
+        }
+      } catch (err) {
+        console.error('Failed to load LLM providers:', err)
+        // Set default providers if API fails
+        setProviders([
+          { name: 'lmstudio', display_name: 'LMStudio', available: true, requires_api_key: false },
+          { name: 'openai', display_name: 'OpenAI GPT', available: false, requires_api_key: false },
+          { name: 'gemini', display_name: 'Google Gemini', available: false, requires_api_key: false }
+        ])
+      } finally {
+        setLoadingProviders(false)
+      }
+    }
+    
+    loadProviders()
+  }, [])
+
+  const handleInputChange = useCallback((field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }))
-  }
+  }, [])
 
-  const analyzeJob = async () => {
+  const analyzeJob = useCallback(async () => {
     if (!formData.company || !formData.role || !formData.jobDescription) {
       setError('Please fill in all required fields')
       return
@@ -52,9 +87,16 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
     })
 
     try {
+      console.log('Starting job analysis...', { 
+        company: formData.company, 
+        role: formData.role, 
+        provider: selectedProvider,
+        apiUrl: `${apiConfig.baseUrl}/api/analyze-job-with-provider`
+      })
+      
       // Race between the actual API call and the timeout
       const response = await Promise.race([
-        fetch('http://localhost:5001/api/analyze-job', {
+        fetch(`${apiConfig.baseUrl}/api/analyze-job-with-provider`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -62,17 +104,23 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
           body: JSON.stringify({
             company: formData.company,
             role: formData.role,
-            jobDescription: formData.jobDescription
+            jobDescription: formData.jobDescription,
+            provider: selectedProvider
           })
         }),
         timeoutPromise
       ]) as Response
 
+      console.log('API Response status:', response.status, response.statusText)
+
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`)
+        const errorText = await response.text()
+        console.error('API Error details:', errorText)
+        throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorText}`)
       }
 
-      const data = await response.json()
+      const data = await response.json() as AnalyzeJobResponse
+      console.log('API Response data:', data)
 
       if (!data.success) {
         throw new Error(data.error || 'Analysis failed')
@@ -81,27 +129,28 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
       // Transform backend response to match frontend interface
       const analysis: JobAnalysis = {
         keywords: {
-          technical_skills: data.analysis.technical_skills || [],
-          soft_skills: data.analysis.soft_skills || [],
-          experience_requirements: data.analysis.experience_requirements || [],
+          technical_skills: data.analysis?.technical_skills || [],
+          soft_skills: data.analysis?.soft_skills || [],
+          experience_requirements: data.analysis?.experience_requirements || [],
           nice_to_have: [] // Not directly mapped from backend
         },
         categories: {
-          programming_languages: data.analysis.programming_languages || [],
-          frameworks_tools: data.analysis.frameworks_libraries_tools || [],
-          methodologies: data.analysis.methodologies_concepts || [],
-          soft_skills: data.analysis.soft_skills || []
+          programming_languages: data.analysis?.programming_languages || [],
+          frameworks_tools: data.analysis?.frameworks_libraries_tools || [],
+          methodologies: data.analysis?.methodologies_concepts || [],
+          soft_skills: data.analysis?.soft_skills || []
         },
-        critical_keywords: data.analysis.critical_keywords || [],
+        critical_keywords: data.analysis?.critical_keywords || [],
         job_info: {
           company: formData.company,
           role: formData.role,
-          seniority: data.analysis.job_info?.seniority || 'Mid-level',
-          department: data.analysis.job_info?.department || 'Engineering'
+          seniority: data.analysis?.job_info?.seniority || 'Mid-level',
+          department: data.analysis?.job_info?.department || 'Engineering'
         },
         session_id: data.session_id // Store session ID for subsequent API calls
       }
 
+      console.log('Transformed analysis object:', analysis)
       setIsAnalyzing(false)
       onComplete(analysis)
 
@@ -125,23 +174,61 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
         setError('Failed to analyze job description. Please try again.')
       }
     }
-  }
+  }, [formData, selectedProvider, onComplete])
 
-  const handleUrlImport = async () => {
-    if (!formData.jobUrl) return
+  const handleUrlImport = useCallback(async () => {
+    if (!formData.jobUrl.trim()) return
     
-    // Simulate URL import
-    setFormData(prev => ({
-      ...prev,
-      jobDescription: 'Job description imported from URL...\n\nWe are seeking a Senior Software Engineer to join our team...'
-    }))
-  }
+    setIsAnalyzing(true)
+    setError('')
+    
+    try {
+      const response = await fetch(`${apiConfig.baseUrl}${apiConfig.endpoints.parseLinkedInJob}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jobUrl: formData.jobUrl.trim()
+        })
+      })
+
+      const data = await response.json() as ParseLinkedInJobResponse
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to parse LinkedIn job URL')
+      }
+
+      // Populate form with extracted data
+      setFormData(prev => ({
+        ...prev,
+        company: data.company || prev.company,
+        role: data.role || prev.role,
+        jobDescription: data.jobDescription || prev.jobDescription
+      }))
+
+      setIsAnalyzing(false)
+
+    } catch (err) {
+      setIsAnalyzing(false)
+      
+      if (err instanceof Error) {
+        if (err.message.includes('fetch') || err.message.includes('Failed to fetch')) {
+          setError('Unable to connect to backend server. Please ensure the backend is running on http://localhost:5001')
+        } else {
+          setError(err.message)
+        }
+      } else {
+        setError('Failed to parse LinkedIn job URL. Please try again or enter job details manually.')
+      }
+    }
+  }, [formData.jobUrl])
 
   if (isAnalyzing) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="max-w-2xl w-full">
-          <Card className="shadow-2xl border-0 bg-white dark:bg-gray-800">
+          <Card className="shadow-lg border bg-white">
             <CardContent className="p-12">
               {/* Modern animated header */}
               <div className="text-center mb-10">
@@ -151,10 +238,10 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
                     <Sparkles className="h-10 w-10 text-white animate-pulse" />
                   </div>
                 </div>
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent mb-3">
+                <h2 className="text-3xl font-bold text-gray-900 mb-3">
                   Analyzing Job Description
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400 text-lg">
+                <p className="text-gray-600 text-lg">
                   Extracting strategic insights to optimize your resume
                 </p>
               </div>
@@ -163,20 +250,20 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
               <div className="space-y-6">
                 <div className="flex items-center space-x-4">
                   <div className="flex-shrink-0">
-                    <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-                      <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                      <CheckCircle className="h-6 w-6 text-green-600" />
                     </div>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      <span className="text-sm font-medium text-gray-900">
                         Parsing job requirements
                       </span>
-                      <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+                      <span className="text-xs text-green-600 font-medium">
                         Complete
                       </span>
                     </div>
-                    <div className="mt-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="mt-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                       <div className="h-full bg-green-500 rounded-full" style={{ width: '100%' }} />
                     </div>
                   </div>
@@ -184,20 +271,20 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
 
                 <div className="flex items-center space-x-4">
                   <div className="flex-shrink-0">
-                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                      <Loader className="h-6 w-6 text-blue-600 dark:text-blue-400 animate-spin" />
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <Loader className="h-6 w-6 text-blue-600 animate-spin" />
                     </div>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      <span className="text-sm font-medium text-gray-900">
                         Extracting strategic keywords
                       </span>
-                      <span className="text-xs text-blue-600 dark:text-blue-400 font-medium animate-pulse">
+                      <span className="text-xs text-blue-600 font-medium animate-pulse">
                         Processing...
                       </span>
                     </div>
-                    <div className="mt-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="mt-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                       <div className="h-full bg-blue-500 rounded-full animate-progress" style={{ width: '60%' }} />
                     </div>
                   </div>
@@ -205,46 +292,46 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
 
                 <div className="flex items-center space-x-4 opacity-50">
                   <div className="flex-shrink-0">
-                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                      <div className="h-6 w-6 rounded-full border-2 border-gray-300 dark:border-gray-600" />
+                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                      <div className="h-6 w-6 rounded-full border-2 border-gray-300" />
                     </div>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      <span className="text-sm font-medium text-gray-500">
                         Analyzing skill criticality
                       </span>
-                      <span className="text-xs text-gray-400 dark:text-gray-500">
+                      <span className="text-xs text-gray-400">
                         Pending
                       </span>
                     </div>
-                    <div className="mt-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                    <div className="mt-1 h-1.5 bg-gray-200 rounded-full" />
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-4 opacity-50">
                   <div className="flex-shrink-0">
-                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                      <div className="h-6 w-6 rounded-full border-2 border-gray-300 dark:border-gray-600" />
+                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                      <div className="h-6 w-6 rounded-full border-2 border-gray-300" />
                     </div>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      <span className="text-sm font-medium text-gray-500">
                         Generating optimization strategy
                       </span>
-                      <span className="text-xs text-gray-400 dark:text-gray-500">
+                      <span className="text-xs text-gray-400">
                         Pending
                       </span>
                     </div>
-                    <div className="mt-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                    <div className="mt-1 h-1.5 bg-gray-200 rounded-full" />
                   </div>
                 </div>
               </div>
 
               {/* Helpful tip */}
-              <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                <p className="text-sm text-blue-700 dark:text-blue-300">
+              <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-700">
                   <strong>Tip:</strong> We're using advanced AI to understand not just keywords, but the strategic context of the role to help you stand out.
                 </p>
               </div>
@@ -282,13 +369,68 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
             className="h-10"
           />
           
-          <Input
-            type="url"
-            value={formData.jobUrl}
-            onChange={(e) => handleInputChange('jobUrl', e.target.value)}
-            placeholder="Job URL (optional)"
-            className="h-10"
-          />
+          <div className="flex gap-2">
+            <Input
+              type="url"
+              value={formData.jobUrl}
+              onChange={(e) => handleInputChange('jobUrl', e.target.value)}
+              placeholder="LinkedIn Job URL (optional)"
+              className="h-10 flex-1"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleUrlImport}
+              disabled={!formData.jobUrl.trim() || isAnalyzing}
+              className="h-10 px-3"
+            >
+              <Globe className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* AI Provider Selection */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-2">
+              <Brain className="h-4 w-4" />
+              AI Provider
+            </label>
+            <Select
+              value={selectedProvider}
+              onValueChange={setSelectedProvider}
+              disabled={loadingProviders || isAnalyzing}
+            >
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="Select AI Provider" />
+              </SelectTrigger>
+              <SelectContent>
+                {providers.map((provider) => (
+                  <SelectItem 
+                    key={provider.name} 
+                    value={provider.name}
+                    disabled={!provider.available}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>{provider.display_name}</span>
+                      {!provider.available && (
+                        <Badge variant="secondary" className="text-xs">
+                          Not Configured
+                        </Badge>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Show configuration note for cloud providers */}
+          {!providers.find((p: any) => p.name === selectedProvider)?.available && selectedProvider !== 'lmstudio' && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm text-amber-700">
+                <strong>Note:</strong> {providers.find((p: any) => p.name === selectedProvider)?.display_name} requires API key configuration in environment variables. Contact your administrator for setup.
+              </p>
+            </div>
+          )}
 
           {error && (
             <div className="bg-destructive/15 border border-destructive/20 rounded-lg p-3">
