@@ -43,6 +43,11 @@ class BackgroundSyncService {
    * This should be called once at app startup
    */
   initialize() {
+    if (process.env.NEXT_PUBLIC_ENABLE_BACKGROUND_SYNC !== 'true') {
+      console.log('🚫 Background Sync Service is disabled by feature flag.')
+      return
+    }
+
     if (this.isInitialized) {
       return
     }
