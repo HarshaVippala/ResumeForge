@@ -163,7 +163,7 @@ export function ServiceStatus({ className }: ServiceStatusProps) {
       </div>
       )}
 
-      {/* LMStudio Status */
+      {/* LMStudio Status */}
       <div className="flex items-center gap-1 group relative">
         <Brain className="h-4 w-4 text-muted-foreground" />
         {getStatusIcon(health?.lm_studio_connected ?? false, !!error)}

@@ -129,23 +129,23 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
       // Transform backend response to match frontend interface
       const analysis: JobAnalysis = {
         keywords: {
-          technical_skills: data.analysis.technical_skills || [],
-          soft_skills: data.analysis.soft_skills || [],
-          experience_requirements: data.analysis.experience_requirements || [],
+          technical_skills: data.analysis?.technical_skills || [],
+          soft_skills: data.analysis?.soft_skills || [],
+          experience_requirements: data.analysis?.experience_requirements || [],
           nice_to_have: [] // Not directly mapped from backend
         },
         categories: {
-          programming_languages: data.analysis.programming_languages || [],
-          frameworks_tools: data.analysis.frameworks_libraries_tools || [],
-          methodologies: data.analysis.methodologies_concepts || [],
-          soft_skills: data.analysis.soft_skills || []
+          programming_languages: data.analysis?.programming_languages || [],
+          frameworks_tools: data.analysis?.frameworks_libraries_tools || [],
+          methodologies: data.analysis?.methodologies_concepts || [],
+          soft_skills: data.analysis?.soft_skills || []
         },
-        critical_keywords: data.analysis.critical_keywords || [],
+        critical_keywords: data.analysis?.critical_keywords || [],
         job_info: {
           company: formData.company,
           role: formData.role,
-          seniority: data.analysis.job_info?.seniority || 'Mid-level',
-          department: data.analysis.job_info?.department || 'Engineering'
+          seniority: data.analysis?.job_info?.seniority || 'Mid-level',
+          department: data.analysis?.job_info?.department || 'Engineering'
         },
         session_id: data.session_id // Store session ID for subsequent API calls
       }

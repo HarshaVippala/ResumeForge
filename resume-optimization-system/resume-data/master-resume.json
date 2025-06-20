@@ -1,0 +1,506 @@
+{
+  "profile": {
+    "name": "Harsha Vippala",
+    "email": "harsha.vippala1@gmail.com",
+    "phone": "+1(929)620-7227",
+    "linkedin": "linkedin.com/in/harsha-vippala",
+    "github": "github.com/HarshaVippala",
+    "location": "Irving, TX"
+  },
+  "summary_templates": {
+    "backend_focused": "Software Engineer with 5 years designing and deploying scalable, cloud-native applications using Node.js, TypeScript, Python, React & AWS. Currently leading development for 7-Eleven's mobile self-checkout platform, processing thousands of orders across U.S and Canada. Building projects with AWS Bedrock, Vertex AI, LangGraph & AI agents to explore generative AI applications.",
+    "full_stack": "Full-Stack Software Engineer with 5 years building end-to-end applications from React frontends to Node.js/Python backends on AWS. Experienced in payment systems, real-time processing, and microservices architecture. Currently architecting 7-Eleven's mobile checkout platform handling $500K+ monthly transactions.",
+    "platform_devops": "Platform Engineer with 5 years optimizing cloud infrastructure and serverless architectures on AWS. Specialized in high-availability systems, performance optimization, and observability. Reduced API latency by 40% and architected fault-tolerant payment systems processing millions in transactions.",
+    "ai_focused": "Software Engineer with 5 years in scalable applications, now focusing on AI/ML integration. Building production systems with AWS Bedrock, Vertex AI, and LangGraph. Combining traditional engineering excellence with cutting-edge AI to deliver intelligent, reliable solutions."
+  },
+  "achievements": [
+    {
+      "id": "7E_MCO_PLATFORM",
+      "company": "7-Eleven",
+      "role": "Software Engineer II",
+      "title": "Mobile Self-Checkout Platform Architecture",
+      "situation": "7-Eleven needed to scale their mobile self-checkout (MCO) platform to support rapid expansion across stores while maintaining high reliability",
+      "task": "Design and implement a scalable, fault-tolerant serverless architecture for the MCO platform",
+      "action": "Architected Node.js-based microservices using AWS Lambda and API Gateway, implemented circuit breakers, retry mechanisms, and comprehensive monitoring with New Relic and CloudWatch",
+      "result": "Enabled platform to process over $500K in monthly sales across 60+ stores with 99.95% uptime",
+      "metrics": {
+        "monthly_sales": "$500K+",
+        "stores": "60+",
+        "uptime": "99.95%"
+      },
+      "technologies": ["Node.js", "TypeScript", "AWS Lambda", "API Gateway", "Serverless Framework", "New Relic", "CloudWatch"],
+      "skills": ["System Design", "Microservices", "Fault Tolerance", "Scalability", "Monitoring"],
+      "keywords": ["serverless", "microservices", "fault-tolerant", "scalable", "high-availability"],
+      "bullet_versions": {
+        "v1_impact": "Led the design, development, and scaling of Node.js-based serverless microservices using AWS Lambda and API Gateway for 7-Eleven's mobile self-checkout (MCO) platform, enabling over $500K in monthly sales across 60+ stores with fault-tolerant, reliable systems",
+        "v2_technical": "Architected fault-tolerant serverless microservices using Node.js, TypeScript, and AWS Lambda, implementing circuit breakers and retry mechanisms to achieve 99.95% uptime for mobile checkout platform",
+        "v3_concise": "Built scalable Node.js microservices on AWS Lambda processing $500K+ monthly transactions across 60+ stores with 99.95% uptime"
+      }
+    },
+    {
+      "id": "7E_EBT_INTEGRATION",
+      "company": "7-Eleven",
+      "role": "Software Engineer II",
+      "title": "EBT Payment Integration",
+      "situation": "7-Eleven needed to accept EBT payments in mobile self-checkout to serve underbanked customers and comply with SNAP requirements",
+      "task": "Pioneer the integration of EBT payment processing with third-party processors while ensuring compliance and seamless user experience",
+      "action": "Designed and implemented TypeScript-based payment microservices integrating with Forage API, built tax exemption logic, split tender support, and refund workflows with comprehensive error handling",
+      "result": "Successfully launched nationwide EBT support, increasing mobile orders by 15% in target markets and serving as reference architecture for future payment integrations",
+      "metrics": {
+        "order_increase": "15%",
+        "market_impact": "nationwide",
+        "reference_architecture": true
+      },
+      "technologies": ["Node.js", "TypeScript", "AWS Lambda", "Forage API", "Payment Processing", "Serverless"],
+      "skills": ["API Integration", "Payment Systems", "Compliance", "System Architecture", "Error Handling"],
+      "keywords": ["EBT", "payment integration", "compliance", "SNAP", "tax exemption", "split tender"],
+      "bullet_versions": {
+        "v1_impact": "Pioneered the EBT payment integration with third-party processors like Forage, leveraging Node.js for backend logic, adding tax exemption, split tender, and refund support — expanded to nationwide rollout, increasing mobile orders by 15% in target markets",
+        "v2_technical": "Delivered a mission-critical EBT solution, architected with TypeScript for type safety and maintainability, used as a reference for future integrations, demonstrating regulatory compliance and scalability across multiple payment workflows",
+        "v3_comprehensive": "Led design and implementation of compliant EBT payment system using TypeScript microservices on AWS Lambda, integrating Forage API with tax exemption, split tender, and refund support — increased mobile orders by 15% nationwide"
+      }
+    },
+    {
+      "id": "7E_IOT_QR_AUDIO",
+      "company": "7-Eleven",
+      "role": "Software Engineer II",
+      "title": "IoT Kiosk Integration",
+      "situation": "Post-checkout verification at kiosks was manual and inefficient, causing customer friction and potential fraud",
+      "task": "Implement automated QR code verification with audio feedback for seamless post-checkout experience",
+      "action": "Integrated AWS IoT Core with existing kiosk infrastructure, developed QR code verification system with real-time audio feedback, implemented event-driven architecture for instant validation",
+      "result": "Streamlined post-checkout transactions, improved in-store validation efficiency, reduced checkout friction",
+      "metrics": {
+        "efficiency_improvement": "streamlined",
+        "user_experience": "enhanced",
+        "validation_time": "real-time"
+      },
+      "technologies": ["AWS IoT Core", "Node.js", "Event-Driven Architecture", "QR Code", "Real-time Systems"],
+      "skills": ["IoT Integration", "Real-time Processing", "Event-Driven Design", "System Integration"],
+      "keywords": ["IoT", "real-time", "QR code", "audio feedback", "event-driven"],
+      "bullet_versions": {
+        "v1_impact": "Integrated AWS IoT Core with kiosk QR code verification and audio feedback system, streamlining post-checkout transactions and improving in-store validation efficiency",
+        "v2_technical": "Implemented event-driven IoT solution using AWS IoT Core for real-time QR code validation with audio feedback, enhancing post-checkout user experience",
+        "v3_concise": "Built IoT-enabled kiosk verification system with AWS IoT Core, enabling real-time QR validation and audio feedback for seamless checkout"
+      }
+    },
+    {
+      "id": "7E_PERFORMANCE_OPTIMIZATION",
+      "company": "7-Eleven",
+      "role": "Software Engineer II",
+      "title": "API Performance Optimization",
+      "situation": "Mobile checkout APIs experienced high latency under load, impacting user experience and causing cart abandonment",
+      "task": "Reduce API response times and database query load to improve system performance",
+      "action": "Implemented Redis caching layer for frequently accessed cart and basket data, optimized MongoDB queries with proper indexing, refactored data access patterns",
+      "result": "Reduced API response times by 40% and significantly lowered MongoDB query load",
+      "metrics": {
+        "latency_reduction": "40%",
+        "cache_hit_rate": "high",
+        "db_load_reduction": "significant"
+      },
+      "technologies": ["Redis", "MongoDB", "Node.js", "Caching", "Performance Optimization"],
+      "skills": ["Performance Tuning", "Caching Strategies", "Database Optimization", "Scalability"],
+      "keywords": ["performance", "caching", "Redis", "optimization", "latency", "scalability"],
+      "bullet_versions": {
+        "v1_impact": "Reduced API response times by 40% and lowered MongoDB query load by caching frequently accessed cart and basket data via Redis",
+        "v2_technical": "Implemented intelligent caching strategy using Redis for cart/basket data, optimized MongoDB queries with indexing, achieving 40% latency reduction",
+        "v3_comprehensive": "Architected performance optimization solution using Redis caching and MongoDB query optimization, reducing API latency by 40% and improving system scalability"
+      }
+    },
+    {
+      "id": "7E_OBSERVABILITY",
+      "company": "7-Eleven",
+      "role": "Software Engineer II",
+      "title": "Observability and Monitoring Implementation",
+      "situation": "Lack of comprehensive monitoring made it difficult to track system health and quickly identify issues in production",
+      "task": "Set up proactive monitoring and observability for the MCO platform",
+      "action": "Implemented comprehensive monitoring using New Relic APM and CloudWatch, set up custom dashboards, alerts, and SLO tracking, created runbooks for incident response",
+      "result": "Enabled real-time issue tracking, improved MTTR, and maintained release health metrics",
+      "metrics": {
+        "mttr_improvement": "reduced",
+        "alert_accuracy": "high",
+        "slo_tracking": "implemented"
+      },
+      "technologies": ["New Relic", "CloudWatch", "AWS", "Monitoring", "APM", "Observability"],
+      "skills": ["Observability", "Monitoring", "SRE", "Incident Response", "Metrics"],
+      "keywords": ["monitoring", "observability", "New Relic", "CloudWatch", "SLO", "APM"],
+      "bullet_versions": {
+        "v1_impact": "Set up proactive monitoring and rollout observability using New Relic and CloudWatch, supporting real-time issue tracking and release health metrics",
+        "v2_technical": "Implemented comprehensive observability stack with New Relic APM and CloudWatch, including custom dashboards, SLO tracking, and automated alerting",
+        "v3_sre_focused": "Built observability platform using New Relic and CloudWatch, reduced MTTR through proactive monitoring and automated incident detection"
+      }
+    },
+    {
+      "id": "LM_GRAPHQL_APIS",
+      "company": "Liberty Mutual Insurance",
+      "role": "Senior Software Engineer",
+      "title": "Multi-Product Quote Generation APIs",
+      "situation": "Liberty Mutual needed scalable APIs to power real-time insurance quote generation across multiple product lines and states",
+      "task": "Develop resilient APIs supporting 5 product lines across 7 states with seamless third-party integrations",
+      "action": "Built Python-based APIs using GraphQL and gRPC, implemented NestJS architecture, integrated with third-party services, ensured fault tolerance and high availability",
+      "result": "Successfully powered quote generation for Auto, Renters, Small Business, Worker's Comp, and Surety Bonds across 7 U.S. states via Certainly platform",
+      "metrics": {
+        "product_lines": "5",
+        "states_covered": "7",
+        "platform": "Certainly"
+      },
+      "technologies": ["Python", "GraphQL", "gRPC", "NestJS", "AWS", "API Design"],
+      "skills": ["API Development", "System Integration", "GraphQL", "Microservices", "Third-party Integration"],
+      "keywords": ["GraphQL", "gRPC", "API", "insurance", "quote generation", "real-time"],
+      "bullet_versions": {
+        "v1_impact": "Spearheaded the development and maintenance of scalable Python-based APIs incorporating GraphQL and gRPC to power real-time insurance quote generation across 5 product lines—including Auto, Renters, Small Business, Worker's Compensation, and Surety Bonds—supporting customers in 7 U.S. states via the Certainly platform",
+        "v2_technical": "Architected resilient GraphQL/gRPC APIs using Python and NestJS, enabling real-time quote generation with third-party service integration and fault tolerance",
+        "v3_concise": "Built Python APIs with GraphQL/gRPC powering real-time quotes for 5 insurance products across 7 states on Certainly platform"
+      }
+    },
+    {
+      "id": "LM_REPORTING_API",
+      "company": "Liberty Mutual Insurance",
+      "role": "Senior Software Engineer",
+      "title": "Business Intelligence Reporting API",
+      "situation": "Business teams relied on manual reporting processes, causing delays and inefficiencies in data-driven decision making",
+      "task": "Create automated reporting API to streamline business operations and reduce manual work",
+      "action": "Designed and implemented reporting API backed by Amazon Redshift, developed Python ETL scripts for data transformation, created reusable reporting components",
+      "result": "Reduced manual reporting requests by 80%, enabling self-service analytics for business teams",
+      "metrics": {
+        "manual_reduction": "80%",
+        "efficiency_gain": "significant",
+        "user_adoption": "high"
+      },
+      "technologies": ["Python", "Amazon Redshift", "AWS", "ETL", "API Development", "Data Engineering"],
+      "skills": ["Data Engineering", "API Design", "ETL", "Business Intelligence", "Automation"],
+      "keywords": ["Redshift", "reporting", "ETL", "data transformation", "automation", "business intelligence"],
+      "bullet_versions": {
+        "v1_impact": "Implemented a reporting API backed by Amazon Redshift, utilizing Python for data extraction and transformation scripts, to streamline business operations and reduce manual reporting requests by 80%",
+        "v2_technical": "Architected data pipeline using Python ETL scripts and Amazon Redshift, building RESTful reporting API that automated business intelligence workflows",
+        "v3_data_focused": "Built automated reporting solution with Python and Redshift, reducing manual data requests by 80% through self-service API"
+      }
+    },
+    {
+      "id": "LM_USER_TRACKING",
+      "company": "Liberty Mutual Insurance",
+      "role": "Senior Software Engineer",
+      "title": "User Data Tracking Platform",
+      "situation": "Product team lacked insights into user behavior and quote generation patterns, hindering data-driven product development",
+      "task": "Pioneer a user data tracking feature to capture quote generation versions and user interactions",
+      "action": "Designed event-driven tracking system using AWS services and MySQL, implemented versioning for quote data, created analytics dashboard",
+      "result": "Provided valuable insights for data-driven product development and marketing decisions",
+      "metrics": {
+        "data_capture": "comprehensive",
+        "insights_value": "high",
+        "decision_impact": "significant"
+      },
+      "technologies": ["AWS", "MySQL", "Python", "Event-Driven Architecture", "Analytics"],
+      "skills": ["Data Architecture", "Analytics", "Event Tracking", "Database Design", "Product Analytics"],
+      "keywords": ["user tracking", "analytics", "data-driven", "event-driven", "MySQL", "insights"],
+      "bullet_versions": {
+        "v1_impact": "Pioneered a user data tracking feature leveraging AWS services and MySQL to capture quote generation versions, providing valuable insights for data-driven product development and marketing decisions",
+        "v2_technical": "Implemented event-driven user tracking system with AWS and MySQL, capturing quote versioning data and enabling product analytics",
+        "v3_product_focused": "Built user behavior tracking platform capturing quote generation patterns, driving data-informed product and marketing strategies"
+      }
+    },
+    {
+      "id": "LM_INTERN_LEADERSHIP",
+      "company": "Liberty Mutual Insurance",
+      "role": "Senior Software Engineer",
+      "title": "Intern Team Leadership - Product Availability Manager",
+      "situation": "Summer intern team needed guidance to deliver a production-ready microservice within limited timeframe",
+      "task": "Lead and mentor intern team to successfully develop and deploy a product availability manager service",
+      "action": "Provided technical mentorship, conducted code reviews, guided architecture decisions using Node.js/Express.js, coordinated with stakeholders",
+      "result": "Successfully delivered production-ready microservice and redesigned user account page with React",
+      "metrics": {
+        "team_size": "3 interns",
+        "delivery": "on-time",
+        "production_ready": true
+      },
+      "technologies": ["Node.js", "Express.js", "React", "Microservices", "Mentoring"],
+      "skills": ["Technical Leadership", "Mentoring", "Project Management", "Architecture Guidance", "Code Review"],
+      "keywords": ["leadership", "mentoring", "microservice", "Node.js", "React", "team management"],
+      "bullet_versions": {
+        "v1_impact": "Led a team of interns in developing a 'product availability manager' microservice using Node.js and Express.js, and redesigning the user account page with React components",
+        "v2_leadership": "Mentored 3 interns to deliver production-ready microservice with Node.js/Express.js and React UI redesign, providing architecture guidance and code reviews",
+        "v3_technical": "Guided intern team in building Node.js microservice and React components, ensuring production quality through mentorship and technical leadership"
+      }
+    },
+    {
+      "id": "LM_UI_UPDATES",
+      "company": "Liberty Mutual Insurance",
+      "role": "Senior Software Engineer",
+      "title": "Frontend UI Modernization",
+      "situation": "Certainly platform UI needed continuous updates to match new designs and improve user experience",
+      "task": "Modernize and maintain React-based UI components for the insurance platform",
+      "action": "Refactored legacy components, implemented new designs using modern React patterns, ensured responsive design and accessibility",
+      "result": "Enhanced user experience for the Certainly online insurance platform",
+      "metrics": {
+        "user_experience": "enhanced",
+        "component_updates": "continuous",
+        "platform": "Certainly"
+      },
+      "technologies": ["React", "JavaScript", "CSS", "Frontend Development", "UI/UX"],
+      "skills": ["Frontend Development", "React", "UI Implementation", "Responsive Design", "Component Architecture"],
+      "keywords": ["React", "UI", "frontend", "user experience", "components", "responsive"],
+      "bullet_versions": {
+        "v1_impact": "Continuously updated client UI built with React with refreshed designs and components to enhance user experience for the 'certainly' online insurance platform",
+        "v2_technical": "Modernized React-based UI components implementing new designs and patterns, improving user experience across Certainly platform",
+        "v3_concise": "Enhanced Certainly platform UI through React component updates and modern design implementation"
+      }
+    },
+    {
+      "id": "LM_SERVERLESS_PLATFORM",
+      "company": "Liberty Mutual Insurance",
+      "role": "Software Engineer",
+      "title": "Serverless Quote Platform Development",
+      "situation": "Certainly platform needed to handle 87,000+ monthly visits with high performance and reliability",
+      "task": "Develop and optimize backend quoting services using serverless architecture",
+      "action": "Built Python-based AWS Lambda functions, integrated with DynamoDB for high-performance data retrieval, implemented serverless best practices",
+      "result": "Successfully handled over 87,000 monthly visits with high availability and performance",
+      "metrics": {
+        "monthly_visits": "87,000+",
+        "architecture": "serverless",
+        "availability": "high"
+      },
+      "technologies": ["Python", "AWS Lambda", "DynamoDB", "Serverless", "AWS"],
+      "skills": ["Serverless Architecture", "Python", "AWS", "DynamoDB", "Scalability"],
+      "keywords": ["serverless", "Lambda", "DynamoDB", "Python", "high-performance", "scalability"],
+      "bullet_versions": {
+        "v1_impact": "Developed and optimized backend quoting services using Python and AWS Lambda (Serverless Architecture) for the 'certainly' online insurance platform, handling over 87,000 monthly visits and integrating with DynamoDB for high-performance data retrieval",
+        "v2_technical": "Built serverless backend with Python/AWS Lambda and DynamoDB, architecting for 87,000+ monthly visits with high availability",
+        "v3_architecture": "Implemented serverless quote generation platform using Python Lambda functions and DynamoDB, scaling to 87,000+ monthly users"
+      }
+    },
+    {
+      "id": "LM_THIRD_PARTY_INTEGRATION",
+      "company": "Liberty Mutual Insurance",
+      "role": "Software Engineer",
+      "title": "Price Comparison Platform Integrations",
+      "situation": "Liberty Mutual needed to expand reach through third-party price comparison platforms",
+      "task": "Manage integrations with multiple price comparison platforms to increase quote submissions",
+      "action": "Developed custom Node.js adapters for each platform, handled data transformation and API compatibility, ensured reliable quote flow",
+      "result": "Contributed to a 12% increase in submitted quotes across integrated channels",
+      "metrics": {
+        "quote_increase": "12%",
+        "integration_type": "multi-platform",
+        "reliability": "high"
+      },
+      "technologies": ["Node.js", "API Integration", "JavaScript", "Third-party APIs"],
+      "skills": ["API Integration", "Node.js", "Data Transformation", "System Integration", "Adapter Pattern"],
+      "keywords": ["integration", "third-party", "API", "Node.js", "price comparison", "adapters"],
+      "bullet_versions": {
+        "v1_impact": "Managed integrations with third-party price comparison platforms, developing custom Node.js adapters, contributing to a 12% increase in submitted quotes across integrated channels",
+        "v2_technical": "Built Node.js adapter layer for third-party platform integrations, handling data transformation and ensuring reliable quote submission flow",
+        "v3_business": "Increased quote submissions by 12% through custom Node.js integrations with price comparison platforms"
+      }
+    },
+    {
+      "id": "LM_USER_REPORTS",
+      "company": "Liberty Mutual Insurance",
+      "role": "Software Engineer",
+      "title": "On-Demand Reporting Endpoints",
+      "situation": "Business teams needed flexible reporting capabilities for quote generation and user sign-up metrics",
+      "task": "Create REST endpoints for on-demand user reports with customizable time frames",
+      "action": "Designed RESTful APIs, wrote optimized SQL queries against MySQL databases, implemented caching for frequently requested reports",
+      "result": "Enabled self-service reporting for various business metrics and time frames",
+      "metrics": {
+        "report_types": "multiple",
+        "time_flexibility": "customizable",
+        "performance": "optimized"
+      },
+      "technologies": ["SQL", "MySQL", "REST API", "Node.js", "Caching"],
+      "skills": ["API Development", "SQL", "Database Optimization", "REST", "Performance Tuning"],
+      "keywords": ["REST API", "SQL", "MySQL", "reporting", "endpoints", "optimization"],
+      "bullet_versions": {
+        "v1_impact": "Created endpoints for on-demand user reports, leveraging SQL queries against MySQL databases, for various time frames related to quote generation and sign-ups",
+        "v2_technical": "Developed RESTful reporting APIs with optimized SQL queries on MySQL, enabling flexible time-based analytics for business metrics",
+        "v3_concise": "Built on-demand reporting endpoints using SQL/MySQL for quote and signup analytics across custom time frames"
+      }
+    },
+    {
+      "id": "LM_DATA_ANALYSIS",
+      "company": "Liberty Mutual Insurance",
+      "role": "Software Engineer",
+      "title": "Quote Pricing Analysis Feature",
+      "situation": "Product team needed insights into how quote version changes impacted pricing to optimize conversion rates",
+      "task": "Develop data analysis feature to track quote version changes and pricing impact",
+      "action": "Created Python scripts for data analysis, implemented tracking logic, built Grafana dashboards for visualization",
+      "result": "Enabled product team to understand pricing dynamics and optimize quote flows",
+      "metrics": {
+        "analysis_depth": "comprehensive",
+        "visualization": "Grafana",
+        "impact": "pricing optimization"
+      },
+      "technologies": ["Python", "Grafana", "Data Analysis", "MySQL", "Visualization"],
+      "skills": ["Data Analysis", "Python", "Visualization", "Grafana", "Analytics"],
+      "keywords": ["data analysis", "Python", "Grafana", "pricing", "analytics", "visualization"],
+      "bullet_versions": {
+        "v1_impact": "Contributed to a native user data tracking feature, analyzing quote version changes and their impact on pricing, utilizing Python scripts for data analysis and Grafana for visualization",
+        "v2_technical": "Implemented quote pricing analysis using Python and Grafana, tracking version changes to optimize conversion through data insights",
+        "v3_analytical": "Built pricing impact analysis tool with Python scripts and Grafana dashboards, enabling data-driven quote optimization"
+      }
+    },
+    {
+      "id": "LM_FRONTEND_REFACTORING",
+      "company": "Liberty Mutual Insurance",
+      "role": "Software Engineer",
+      "title": "React Component Modernization",
+      "situation": "Legacy React class components were difficult to maintain and test, slowing development velocity",
+      "task": "Refactor class components to modern functional components with hooks",
+      "action": "Systematically refactored components to use React hooks, implemented comprehensive Jest/Cypress tests, improved code maintainability",
+      "result": "Improved development velocity and test coverage for quote flow components",
+      "metrics": {
+        "test_coverage": "increased",
+        "maintainability": "improved",
+        "component_type": "functional"
+      },
+      "technologies": ["React", "Jest", "Cypress", "JavaScript", "Testing"],
+      "skills": ["React", "Testing", "Refactoring", "Frontend Development", "Jest", "Cypress"],
+      "keywords": ["React", "hooks", "functional components", "Jest", "Cypress", "testing"],
+      "bullet_versions": {
+        "v1_impact": "Participated in front-end development for quote flows using React, including refactoring class components to functional components and writing unit tests with Jest/Cypress",
+        "v2_technical": "Modernized React codebase by refactoring class components to hooks-based functional components, implementing comprehensive Jest/Cypress test coverage",
+        "v3_quality": "Enhanced code quality through React component modernization and comprehensive testing with Jest/Cypress"
+      }
+    },
+    {
+      "id": "LM_QUOTE_AGGREGATION",
+      "company": "Liberty Mutual Insurance",
+      "role": "Software Engineer",
+      "title": "High-Throughput Quote Aggregation",
+      "situation": "Quote aggregation service experienced latency issues under high load, impacting user experience",
+      "task": "Optimize GraphQL API to support high-throughput quote aggregation with minimal latency",
+      "action": "Implemented query optimization, connection pooling, caching strategies, and load balancing for GraphQL resolvers",
+      "result": "Achieved 35% reduction in query response time and improved system stability",
+      "metrics": {
+        "latency_reduction": "35%",
+        "throughput": "increased",
+        "stability": "improved"
+      },
+      "technologies": ["GraphQL", "Node.js", "Performance Optimization", "Caching", "Load Balancing"],
+      "skills": ["Performance Optimization", "GraphQL", "Scalability", "System Design", "Caching"],
+      "keywords": ["GraphQL", "performance", "optimization", "high-throughput", "latency", "scalability"],
+      "bullet_versions": {
+        "v1_impact": "Architected scalable GraphQL API layers to support high-throughput quote aggregation with minimal latency, cutting frontend integration complexity and load times by 35%",
+        "v2_technical": "Optimized GraphQL resolvers with caching and query optimization, reducing quote aggregation latency by 35% under high load",
+        "v3_performance": "Improved quote API performance by 35% through GraphQL optimization, caching strategies, and load balancing"
+      }
+    },
+    {
+      "id": "LM_CHECKOUT_OPTIMIZATION",
+      "company": "Liberty Mutual Insurance",
+      "role": "Software Engineer",
+      "title": "Checkout Flow Enhancement",
+      "situation": "Checkout process had high abandonment rates due to complex flows and poor user experience",
+      "task": "Refactor and optimize React/Suspense checkout components for better performance and UX",
+      "action": "Analyzed user behavior data, refactored React components with Suspense for code-splitting, reduced bundle size by 15%, improved loading states",
+      "result": "Improved checkout conversion rates and reduced page load times",
+      "metrics": {
+        "bundle_reduction": "15%",
+        "conversion": "improved",
+        "load_time": "reduced"
+      },
+      "technologies": ["React", "React.Suspense", "Code Splitting", "Performance", "JavaScript"],
+      "skills": ["Frontend Optimization", "React", "Performance", "UX", "Code Splitting"],
+      "keywords": ["React", "Suspense", "performance", "checkout", "optimization", "code-splitting"],
+      "bullet_versions": {
+        "v1_impact": "Refactored Cart and Checkout class components using Kafka and AWS Kinesis, providing business teams with real-time insights to drive data-driven product decisions, helping drive a 7% increase in conversion rates",
+        "v2_technical": "Optimized checkout flow with React Suspense and code-splitting, reducing bundle size by 15% and improving load performance",
+        "v3_ux": "Enhanced checkout experience through React component optimization, improving conversion rates with 15% smaller bundles"
+      }
+    },
+    {
+      "id": "LM_MICROSERVICE_PRODUCT",
+      "company": "Liberty Mutual Insurance",
+      "role": "Software Engineer",
+      "title": "Product Availability Microservice",
+      "situation": "Monolithic architecture made it difficult to scale product availability checks independently",
+      "task": "Design and implement dedicated microservice for product availability",
+      "action": "Built Node.js microservice with Express, implemented caching layer, created RESTful APIs with proper versioning",
+      "result": "Improved scalability and reduced latency for product availability checks",
+      "metrics": {
+        "architecture": "microservice",
+        "scalability": "improved",
+        "api_design": "RESTful"
+      },
+      "technologies": ["Node.js", "Express.js", "Microservices", "REST API", "Caching"],
+      "skills": ["Microservices", "API Design", "Node.js", "System Architecture", "REST"],
+      "keywords": ["microservice", "Node.js", "Express", "REST", "scalability", "architecture"],
+      "bullet_versions": {
+        "v1_impact": "Mentored and led 3 interns in building an internal product availability microservice with AWS Lambda & DynamoDB, delivering it on time and integrating it into production workflows",
+        "v2_technical": "Architected Node.js/Express microservice for product availability with caching layer and RESTful APIs, improving system scalability",
+        "v3_leadership": "Led development of product availability microservice using Node.js/Express, mentoring team to deliver production-ready solution"
+      }
+    },
+    {
+      "id": "LM_TESTING_INFRASTRUCTURE",
+      "company": "Liberty Mutual Insurance",
+      "role": "Software Engineer",
+      "title": "End-to-End Testing Implementation",
+      "situation": "Lack of comprehensive testing led to production issues and reduced confidence in deployments",
+      "task": "Implement comprehensive testing infrastructure for quote flows",
+      "action": "Set up Cypress E2E testing framework, created reusable test utilities, implemented CI/CD integration with automated test runs",
+      "result": "Reduced production defects by 60% and improved deployment confidence",
+      "metrics": {
+        "defect_reduction": "60%",
+        "test_coverage": "comprehensive",
+        "automation": "CI/CD integrated"
+      },
+      "technologies": ["Cypress", "Jest", "Testing", "CI/CD", "JavaScript"],
+      "skills": ["Test Automation", "Cypress", "CI/CD", "Quality Assurance", "Testing Strategy"],
+      "keywords": ["testing", "Cypress", "E2E", "automation", "CI/CD", "quality"],
+      "bullet_versions": {
+        "v1_impact": "Built comprehensive automated end-to-end tests with Cypress, raising test coverage from 60% to 95% and reducing regressions by 40%",
+        "v2_technical": "Implemented Cypress E2E testing framework with CI/CD integration, achieving 95% coverage and 60% reduction in production defects",
+        "v3_quality": "Established automated testing infrastructure using Cypress/Jest, improving code quality and reducing defects by 60%"
+      }
+    },
+    {
+      "id": "LM_GRPC_IMPLEMENTATION",
+      "company": "Liberty Mutual Insurance",
+      "role": "Software Engineer",
+      "title": "gRPC Service Implementation",
+      "situation": "REST APIs faced performance limitations for internal service communication",
+      "task": "Implement gRPC for high-performance internal service communication",
+      "action": "Designed protobuf schemas, implemented gRPC services in Python, created client libraries, ensured backward compatibility",
+      "result": "Achieved 50% reduction in inter-service communication latency",
+      "metrics": {
+        "latency_reduction": "50%",
+        "protocol": "gRPC",
+        "performance": "high"
+      },
+      "technologies": ["gRPC", "Python", "Protocol Buffers", "API Design", "Performance"],
+      "skills": ["gRPC", "API Design", "Python", "Performance Optimization", "Protocol Buffers"],
+      "keywords": ["gRPC", "protobuf", "performance", "API", "Python", "inter-service"],
+      "bullet_versions": {
+        "v1_technical": "Implemented gRPC services with Python and protocol buffers for high-performance inter-service communication, reducing latency by 50%",
+        "v2_architecture": "Architected gRPC-based service mesh replacing REST for internal APIs, achieving 50% latency reduction",
+        "v3_impact": "Modernized service communication with gRPC/protobuf implementation, cutting inter-service latency in half"
+      }
+    }
+  ],
+  "skills": {
+    "languages": ["Node.js", "TypeScript", "Python", "JavaScript", "Java", "Go"],
+    "frameworks": ["React", "NestJS", "Next.js", "Express.js", "Django", "FastAPI"],
+    "cloud_devops": ["AWS Lambda", "EC2", "S3", "CloudFormation", "IAM", "VPC", "SQS", "SNS", "Docker", "Kubernetes", "Terraform", "Ansible"],
+    "apis": ["RESTful APIs", "GraphQL", "gRPC", "OAuth 2.0", "JWT", "Swagger/OpenAPI", "API Gateway"],
+    "databases": ["MongoDB", "MySQL", "PostgreSQL", "DynamoDB", "Redis", "Redshift", "Kafka", "RabbitMQ"],
+    "architecture": ["Microservices", "Serverless", "Event-Driven", "Domain-Driven Design", "CQRS", "Saga Pattern"],
+    "storage": ["AWS S3", "Redis", "ElastiCache", "CloudFront CDN", "Object Storage"],
+    "monitoring": ["New Relic", "Datadog", "CloudWatch", "ELK Stack", "Prometheus", "Grafana", "APM", "Open Telemetry"],
+    "testing": ["Jest", "Cypress", "Postman", "Mocha", "Chai", "PyTest", "Selenium"],
+    "cicd": ["Jenkins", "GitHub Actions", "GitLab CI/CD", "AWS CodePipeline", "Bamboo", "ArgoCD"],
+    "ai_ml": ["AWS Bedrock", "Vertex AI", "RAG", "NLP", "LangChain", "OpenAI APIs", "TensorFlow", "PyTorch"],
+    "certifications": ["AWS Certified AI Practitioner", "AWS Solutions Architect Associate (in progress)"]
+  },
+  "education": {
+    "degree": "Master of Science in Computer Engineering",
+    "university": "New York University",
+    "location": "New York, NY",
+    "graduation": "May 2021",
+    "gpa": "3.8/4.0",
+    "coursework": ["Distributed Systems", "Machine Learning", "Cloud Computing", "Software Engineering"],
+    "undergraduate": {
+      "degree": "Bachelor of Technology in Computer Science & Engineering",
+      "university": "K L University",
+      "location": "Vijayawada, India",
+      "graduation": "May 2019"
+    }
+  }
+}
