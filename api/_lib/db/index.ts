@@ -32,7 +32,7 @@ export function getSupabase(): SupabaseClient<Database> {
 export async function testConnection(): Promise<boolean> {
   try {
     const db = getSupabase();
-    const { error } = await db.from('sessions').select('id').limit(1);
+    const { error } = await db.from('resume_sessions').select('id').limit(1);
     return !error;
   } catch (error) {
     console.error('Database connection test failed:', error);
