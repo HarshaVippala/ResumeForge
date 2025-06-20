@@ -1,5 +1,4 @@
 import { OpenAI } from 'openai';
-import { OpenAIStream, StreamingTextResponse } from 'ai';
 
 // Initialize OpenAI client
 let openaiClient: OpenAI | null = null;
@@ -98,9 +97,8 @@ Focus on extracting concrete, specific requirements. Be thorough but concise.`;
       response_format: { type: 'json_object' }
     });
 
-    // Convert to stream
-    const stream = OpenAIStream(response);
-    return stream;
+    // Return the OpenAI stream directly
+    return response;
   }
 
   /**
@@ -206,9 +204,8 @@ Return a JSON object with this structure:
       response_format: { type: 'json_object' }
     });
 
-    // Convert to stream
-    const stream = OpenAIStream(response);
-    return stream;
+    // Return the OpenAI stream directly
+    return response;
   }
 
   /**

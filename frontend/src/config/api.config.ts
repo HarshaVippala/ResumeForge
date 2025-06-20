@@ -3,6 +3,8 @@
  * Centralized configuration for all API endpoints and settings
  */
 
+import { migrationConfig, getApiEndpointUrl } from './migration.config'
+
 export const apiConfig = {
   baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001',
   timeout: parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '30000'),
@@ -61,9 +63,25 @@ export const apiConfig = {
 }
 
 /**
- * Get full API URL
+ * Get full API URL with migration support
  */
 export function getApiUrl(endpoint: string): string {
+  // Check if this endpoint has been migrated
+  const endpointName = endpoint.replace('/api/', '').replace(/-/g, '')
+  const mappedEndpoint = {
+    'analyzejob': 'analyzeJob',
+    'tailorresumecomplete': 'tailorResumeComplete',
+    'exportsimpleresume': 'exportSimpleResume',
+    'parselinkedinjob': 'parseLinkedInJob',
+    'health': 'health'
+  }[endpointName] as keyof typeof migrationConfig.migratedEndpoints
+
+  if (mappedEndpoint && migrationConfig.migratedEndpoints[mappedEndpoint] && migrationConfig.useTypescriptApi) {
+    // Use TypeScript API for migrated endpoints
+    return `${migrationConfig.typescriptApiUrl}${endpoint}`
+  }
+  
+  // Default to Flask API
   return `${apiConfig.baseUrl}${endpoint}`
 }
 

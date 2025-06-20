@@ -10,7 +10,6 @@
 **/gmail_token.json
 **/credentials.json
 **/token.json
-*.pdf
 *.txt
 !backend/prompts/*.txt
 # Database files
@@ -113,3 +112,15 @@ htmlcov/
 # Temporary files
 *.tmp
 *.temp
+
+# Vercel
+.vercel
+.env*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Local test outputs
+test_outputs/
+test_*.txt
+test_*.log
