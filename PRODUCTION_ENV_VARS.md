@@ -45,13 +45,23 @@ LOG_LEVEL=INFO
 NODE_ENV=production
 ```
 
-### 6. Gmail Integration (If Implementing Email Features)
+### 6. Gmail Integration (Now Implemented!)
 ```
-GMAIL_CREDENTIALS_JSON={"type":"service_account","project_id":"..."}
-GMAIL_TOKEN_JSON={"access_token":"...","refresh_token":"..."}
+# OAuth Credentials
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_REDIRECT_URI=https://your-app.vercel.app/api/oauth/callback
+
+# Pub/Sub Configuration
+PUBSUB_TOPIC_NAME=projects/YOUR_PROJECT_ID/topics/gmail-push
+PUBSUB_PUSH_ENDPOINT=https://your-app.vercel.app/api/gmail/webhook
+
+# Optional: Custom encryption key (uses SUPABASE_SERVICE_KEY if not set)
+GMAIL_TOKEN_ENCRYPTION_KEY=your-32-char-encryption-key
 ```
-- Store the entire JSON content as a string
-- Required only if email sync is enabled
+- Get OAuth credentials from Google Cloud Console
+- Set up Pub/Sub topic for real-time email notifications
+- See GMAIL_INTEGRATION_SETUP.md for detailed setup
 
 ## Optional Environment Variables
 
