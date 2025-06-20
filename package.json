@@ -1,15 +1,15 @@
 {
-  "name": "resume-builder-v2-api",
+  "name": "resume-builder-v2",
   "version": "1.0.0",
-  "description": "TypeScript API for Resume Builder v2",
+  "description": "Resume Builder v2 - TypeScript/Next.js Application",
   "private": true,
   "scripts": {
     "dev": "cd frontend && npm run dev",
-    "dev:api": "vercel dev --listen 3001",
-    "build": "tsc",
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm run start",
+    "install:all": "npm install && cd frontend && npm install",
     "type-check": "tsc --noEmit",
-    "lint": "eslint api --ext .ts",
-    "test": "jest"
+    "lint": "cd frontend && npm run lint"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
