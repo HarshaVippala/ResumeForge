@@ -4,7 +4,8 @@
   "description": "TypeScript API for Resume Builder v2",
   "private": true,
   "scripts": {
-    "dev": "vercel dev",
+    "dev": "cd frontend && npm run dev",
+    "dev:api": "vercel dev --listen 3001",
     "build": "tsc",
     "type-check": "tsc --noEmit",
     "lint": "eslint api --ext .ts",
