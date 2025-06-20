@@ -35,10 +35,94 @@ export interface Database {
           updated_at?: string;
         };
       };
-      // Add other tables as needed
+      jobs: {
+        Row: {
+          id: string;
+          job_id: string;
+          title: string;
+          company: string;
+          location: string;
+          remote: boolean;
+          job_type: string;
+          salary_min?: number;
+          salary_max?: number;
+          salary_currency: string;
+          description: string;
+          requirements?: string;
+          benefits?: string;
+          application_url: string;
+          company_logo_url?: string;
+          platform: string;
+          date_posted: string;
+          skills: string[];
+          experience_level: string;
+          scraped_at: string;
+          is_saved?: boolean;
+          saved_at?: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          job_id?: string;
+          title: string;
+          company: string;
+          location?: string;
+          remote?: boolean;
+          job_type?: string;
+          salary_min?: number;
+          salary_max?: number;
+          salary_currency?: string;
+          description?: string;
+          requirements?: string;
+          benefits?: string;
+          application_url?: string;
+          company_logo_url?: string;
+          platform?: string;
+          date_posted?: string;
+          skills?: string[];
+          experience_level?: string;
+          scraped_at?: string;
+          is_saved?: boolean;
+          saved_at?: string;
+        };
+        Update: {
+          id?: string;
+          job_id?: string;
+          title?: string;
+          company?: string;
+          location?: string;
+          remote?: boolean;
+          job_type?: string;
+          salary_min?: number;
+          salary_max?: number;
+          salary_currency?: string;
+          description?: string;
+          requirements?: string;
+          benefits?: string;
+          application_url?: string;
+          company_logo_url?: string;
+          platform?: string;
+          date_posted?: string;
+          skills?: string[];
+          experience_level?: string;
+          is_saved?: boolean;
+          saved_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: {};
-    Functions: {};
+    Functions: {
+      get_top_companies: {
+        Args: { limit_count: number };
+        Returns: Array<{ company: string; job_count: number }>;
+      };
+      get_experience_distribution: {
+        Args: {};
+        Returns: Array<{ experience_level: string; count: number }>;
+      };
+    };
     Enums: {};
   };
 }
