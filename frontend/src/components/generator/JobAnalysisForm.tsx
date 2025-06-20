@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,7 +18,8 @@ import {
   Brain,
   Zap
 } from 'lucide-react'
-import type { JobAnalysis } from '@/types'
+import type { JobAnalysis, ProvidersResponse, LlmProvider, AnalyzeJobResponse, ParseLinkedInJobResponse } from '@/types'
+import { apiConfig } from '@/config/api.config'
 
 interface JobAnalysisFormProps {
   onComplete: (analysis: JobAnalysis) => void
@@ -33,16 +34,16 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
   })
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState('')
-  const [selectedProvider, setSelectedProvider] = useState('lmstudio')
-  const [providers, setProviders] = useState([])
+  const [selectedProvider, setSelectedProvider] = useState('openai') // Default to openai since it's working
+  const [providers, setProviders] = useState<LlmProvider[]>([])
   const [loadingProviders, setLoadingProviders] = useState(true)
 
   // Load available LLM providers on component mount
   useEffect(() => {
     const loadProviders = async () => {
       try {
-        const response = await fetch('http://localhost:5001/api/llm-providers')
-        const data = await response.json()
+        const response = await fetch(`${apiConfig.baseUrl}${apiConfig.endpoints.llmProviders}`)
+        const data = await response.json() as ProvidersResponse
         
         if (data.success) {
           setProviders(data.providers)
@@ -64,14 +65,14 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
     loadProviders()
   }, [])
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = useCallback((field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }))
-  }
+  }, [])
 
-  const analyzeJob = async () => {
+  const analyzeJob = useCallback(async () => {
     if (!formData.company || !formData.role || !formData.jobDescription) {
       setError('Please fill in all required fields')
       return
@@ -86,9 +87,16 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
     })
 
     try {
+      console.log('Starting job analysis...', { 
+        company: formData.company, 
+        role: formData.role, 
+        provider: selectedProvider,
+        apiUrl: `${apiConfig.baseUrl}/api/analyze-job-with-provider`
+      })
+      
       // Race between the actual API call and the timeout
       const response = await Promise.race([
-        fetch('http://localhost:5001/api/analyze-job-with-provider', {
+        fetch(`${apiConfig.baseUrl}/api/analyze-job-with-provider`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -103,11 +111,16 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
         timeoutPromise
       ]) as Response
 
+      console.log('API Response status:', response.status, response.statusText)
+
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`)
+        const errorText = await response.text()
+        console.error('API Error details:', errorText)
+        throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorText}`)
       }
 
-      const data = await response.json()
+      const data = await response.json() as AnalyzeJobResponse
+      console.log('API Response data:', data)
 
       if (!data.success) {
         throw new Error(data.error || 'Analysis failed')
@@ -137,6 +150,7 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
         session_id: data.session_id // Store session ID for subsequent API calls
       }
 
+      console.log('Transformed analysis object:', analysis)
       setIsAnalyzing(false)
       onComplete(analysis)
 
@@ -160,16 +174,16 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
         setError('Failed to analyze job description. Please try again.')
       }
     }
-  }
+  }, [formData, selectedProvider, onComplete])
 
-  const handleUrlImport = async () => {
+  const handleUrlImport = useCallback(async () => {
     if (!formData.jobUrl.trim()) return
     
     setIsAnalyzing(true)
     setError('')
     
     try {
-      const response = await fetch('http://localhost:5001/api/parse-linkedin-job', {
+      const response = await fetch(`${apiConfig.baseUrl}${apiConfig.endpoints.parseLinkedInJob}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -179,7 +193,7 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
         })
       })
 
-      const data = await response.json()
+      const data = await response.json() as ParseLinkedInJobResponse
 
       if (!response.ok || !data.success) {
         throw new Error(data.error || 'Failed to parse LinkedIn job URL')
@@ -208,7 +222,7 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
         setError('Failed to parse LinkedIn job URL. Please try again or enter job details manually.')
       }
     }
-  }
+  }, [formData.jobUrl])
 
   if (isAnalyzing) {
     return (
@@ -389,7 +403,7 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
                 <SelectValue placeholder="Select AI Provider" />
               </SelectTrigger>
               <SelectContent>
-                {providers.map((provider: any) => (
+                {providers.map((provider) => (
                   <SelectItem 
                     key={provider.name} 
                     value={provider.name}

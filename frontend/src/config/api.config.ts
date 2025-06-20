@@ -7,11 +7,11 @@ export const apiConfig = {
   baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001',
   timeout: parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '30000'),
   
-  // Authentication settings
+  // Authentication disabled for personal use
   auth: {
-    enabled: true, // Always enabled for secure authentication
-    domain: process.env.NEXT_PUBLIC_AUTH_DOMAIN || '',
-    clientId: process.env.NEXT_PUBLIC_AUTH_CLIENT_ID || '',
+    enabled: false,
+    domain: '',
+    clientId: '',
   },
   
   // Feature flags
@@ -27,10 +27,14 @@ export const apiConfig = {
   endpoints: {
     // Job Analysis
     analyzeJob: '/api/analyze-job',
+    parseLinkedInJob: '/api/parse-linkedin-job',
+    llmProviders: '/api/llm-providers',
     
     // Resume Generation
     generateSection: '/api/generate-section',
     exportResume: '/api/export-resume',
+    tailorResumeComplete: '/api/tailor-resume-complete',
+    exportSimpleResume: '/api/export-simple-resume',
     
     // Resume Library
     resumeLibrary: '/api/resume-library',
@@ -52,12 +56,7 @@ export const apiConfig = {
     // Email Service
     sendEmail: '/api/send-email',
     
-    // Authentication
-    login: '/api/auth/login',
-    signup: '/api/auth/signup',
-    logout: '/api/auth/logout',
-    validate: '/api/auth/validate',
-    refresh: '/api/auth/refresh',
+    // Authentication endpoints removed
   }
 }
 

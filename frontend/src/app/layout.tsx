@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/theme-provider";
-import { AuthProvider } from "@/contexts/AuthContext";
 
 // Google Sans font weights
 // 300: Light - for subtle text
@@ -42,9 +41,7 @@ export default function RootLayout({
           defaultTheme="system"
           storageKey="resume-builder-theme"
         >
-          <AuthProvider>
-            {children}
-          </AuthProvider>
+          {children}
         </ThemeProvider>
       </body>
     </html>

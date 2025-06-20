@@ -10,7 +10,6 @@
 **/gmail_token.json
 **/credentials.json
 **/token.json
-*.md
 *.pdf
 *.txt
 !backend/prompts/*.txt

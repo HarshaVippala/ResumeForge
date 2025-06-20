@@ -25,10 +25,9 @@ from services.database import DatabaseManager
 from services.supabase_manager import SupabaseDatabaseManager
 from services.linkedin_parser import LinkedInParser
 from services.llm_factory import LLMFactory
+from services.simple_resume_tailor import SimpleResumeTailor
 
-# Import security components
-from middleware.secure_auth import require_auth, optional_auth, auth
-from secure_database import SecureDatabase
+# Security components removed - no auth needed for personal use
 # Legacy unified service removed
 from services.resume import (
     SectionGenerator,
@@ -41,18 +40,33 @@ from config.database_config import db_config
 import json
 import re
 
+# Import PDF converter at the top of the file
+from services.pdf_converter import pdf_converter
+
 # Load environment variables
 load_dotenv()
 
-# Configure logging
+# Configure logging - reduced verbosity for personal use
+log_level = getattr(logging, os.getenv('LOG_LEVEL', 'WARNING').upper())
 logging.basicConfig(
-    level=logging.INFO,
+    level=log_level,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-logger = logging.getLogger(__name__)
 
-# Initialize secure database
-secure_db = SecureDatabase()
+# Set specific log levels to reduce noise
+logging.getLogger('werkzeug').setLevel(logging.ERROR)  # Only show server errors
+logging.getLogger('googleapiclient.discovery_cache').setLevel(logging.ERROR)
+logging.getLogger('httpx').setLevel(logging.WARNING)
+logging.getLogger('email_processing.services.dashboard_service').setLevel(logging.ERROR)  # Too verbose
+
+# Only log important application events
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)  # Keep main app logs
+
+# Database initialization
+
+# Initialize simple resume tailor
+simple_tailor = SimpleResumeTailor()
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -355,6 +369,54 @@ def analyze_job_with_provider():
         
     except Exception as e:
         logger.error(f"Error in analyze_job_with_provider: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/tailor-resume-complete', methods=['POST'])
+def tailor_resume_complete():
+    """
+    Simple complete resume tailoring for personal use
+    
+    Expected payload:
+    {
+        "company": "Google",
+        "role": "Senior Software Engineer", 
+        "jobDescription": "..."
+    }
+    
+    Returns complete tailored resume with simple insights
+    """
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+            
+        company = data.get('company', '').strip()
+        role = data.get('role', '').strip()
+        job_description = data.get('jobDescription', '').strip()
+        
+        if not all([company, role, job_description]):
+            return jsonify({'error': 'Missing required fields: company, role, jobDescription'}), 400
+        
+        logger.info(f"Tailoring complete resume for: {company} - {role}")
+        
+        # Generate complete tailored resume
+        tailored_resume, insights = simple_tailor.tailor_resume_complete(
+            job_description=job_description,
+            company=company,
+            role=role
+        )
+        
+        return jsonify({
+            'success': True,
+            'tailored_resume': tailored_resume,
+            'insights': insights,
+            'company': company,
+            'role': role
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in tailor_resume_complete: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/generate-section', methods=['POST'])
@@ -1346,171 +1408,7 @@ def get_sync_status():
 # AUTHENTICATION ENDPOINTS
 # =====================================
 
-@app.route('/api/auth/login', methods=['POST'])
-def login():
-    """Secure user login with JWT token generation"""
-    try:
-        data = request.get_json()
-        email = data.get('email', '').strip().lower()
-        password = data.get('password', '')
-        
-        if not email or not password:
-            return jsonify({'error': 'Email and password are required'}), 400
-        
-        # Check rate limiting
-        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
-        if auth.is_rate_limited(client_ip):
-            return jsonify({'error': 'Too many login attempts. Please try again later.'}), 429
-        
-        # Authenticate user
-        user = secure_db.get_user_by_email(email)
-        if not user or not secure_db.verify_password(password, user['password_hash']):
-            auth.record_failed_attempt(client_ip)
-            secure_db.log_security_event('LOGIN_FAILED', None, client_ip, f'Invalid credentials for {email}')
-            return jsonify({'error': 'Invalid email or password'}), 401
-        
-        # Generate JWT token
-        token = auth.generate_token({
-            'id': user['id'],
-            'email': user['email'],
-            'is_admin': user.get('is_admin', False)
-        })
-        
-        # Clear failed attempts and log successful login
-        auth.clear_failed_attempts(client_ip)
-        secure_db.log_security_event('LOGIN_SUCCESS', user['id'], client_ip)
-        
-        return jsonify({
-            'success': True,
-            'token': token,
-            'user': {
-                'id': user['id'],
-                'email': user['email'],
-                'is_admin': user.get('is_admin', False)
-            }
-        })
-        
-    except Exception as e:
-        logger.error(f"Login error: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-@app.route('/api/auth/signup', methods=['POST'])
-def signup():
-    """User registration with secure password hashing"""
-    try:
-        data = request.get_json()
-        email = data.get('email', '').strip().lower()
-        password = data.get('password', '')
-        name = data.get('name', '')
-        
-        if not email or not password:
-            return jsonify({'error': 'Email and password are required'}), 400
-        
-        # Validate email format
-        import re
-        email_regex = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
-        if not re.match(email_regex, email):
-            return jsonify({'error': 'Invalid email format'}), 400
-        
-        # Validate password strength
-        if len(password) < 8:
-            return jsonify({'error': 'Password must be at least 8 characters long'}), 400
-        
-        if not re.search(r'(?=.*[a-z])(?=.*[A-Z])(?=.*\d)', password):
-            return jsonify({'error': 'Password must contain uppercase, lowercase, and number'}), 400
-        
-        # Check if user already exists
-        existing_user = secure_db.get_user_by_email(email)
-        if existing_user:
-            return jsonify({'error': 'User with this email already exists'}), 409
-        
-        # Create new user
-        user_id = secure_db.create_user(email, password)
-        
-        # Generate JWT token
-        token = auth.generate_token({
-            'id': user_id,
-            'email': email,
-            'is_admin': False
-        })
-        
-        # Log successful registration
-        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
-        secure_db.log_security_event('USER_REGISTERED', user_id, client_ip)
-        
-        return jsonify({
-            'success': True,
-            'token': token,
-            'user': {
-                'id': user_id,
-                'email': email,
-                'is_admin': False
-            }
-        }), 201
-        
-    except Exception as e:
-        logger.error(f"Signup error: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-@app.route('/api/auth/validate', methods=['GET'])
-@require_auth
-def validate_token():
-    """Validate JWT token and return user data"""
-    try:
-        return jsonify({
-            'success': True,
-            'user': {
-                'id': request.user.get('user_id'),
-                'email': request.user.get('email'),
-                'is_admin': request.user.get('is_admin', False)
-            }
-        })
-    except Exception as e:
-        logger.error(f"Token validation error: {e}")
-        return jsonify({'error': 'Token validation failed'}), 401
-
-@app.route('/api/auth/logout', methods=['POST'])
-@require_auth
-def logout():
-    """Logout user and invalidate token"""
-    try:
-        user_id = request.user.get('user_id')
-        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.remote_addr)
-        
-        # Log logout event
-        secure_db.log_security_event('LOGOUT', user_id, client_ip)
-        
-        return jsonify({
-            'success': True,
-            'message': 'Logged out successfully'
-        })
-        
-    except Exception as e:
-        logger.error(f"Logout error: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-@app.route('/api/auth/refresh', methods=['POST'])
-@require_auth
-def refresh_token():
-    """Refresh JWT token"""
-    try:
-        user_data = {
-            'id': request.user.get('user_id'),
-            'email': request.user.get('email'),
-            'is_admin': request.user.get('is_admin', False)
-        }
-        
-        # Generate new token
-        new_token = auth.generate_token(user_data)
-        
-        return jsonify({
-            'success': True,
-            'token': new_token
-        })
-        
-    except Exception as e:
-        logger.error(f"Token refresh error: {e}")
-        return jsonify({'error': 'Token refresh failed'}), 401
+# Authentication endpoints removed - no login needed for personal use
 
 # =====================================
 # HEALTH CHECK ENDPOINT
@@ -1564,26 +1462,164 @@ def health_check():
         'database_type': 'postgresql' if db_config.is_postgresql() else 'sqlite',
         'email_processing_status': email_processing_status,
         'email_architecture': 'multi_stage_groq_enhanced'
-    })
+          })
+
+@app.route('/api/export-simple-resume', methods=['POST'])
+def export_simple_resume():
+    """
+    Export resume directly from simple tailor results
+    
+    Expected payload:
+    {
+        "tailored_resume": {...},  // The complete tailored resume object
+        "company": "Google",
+        "role": "Senior Software Engineer",
+        "format": "docx"  // "docx", "pdf"
+    }
+    """
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+            
+        tailored_resume = data.get('tailored_resume')
+        company = data.get('company', 'Company')
+        role = data.get('role', 'Position')
+        export_format = data.get('format', 'docx')
+        
+        if not tailored_resume:
+            return jsonify({'error': 'Missing tailored_resume data'}), 400
+        
+        logger.info(f"Exporting simple resume for: {company} - {role} as {export_format}")
+        
+        # Convert tailored resume to sections format expected by document patcher
+        sections = {
+            'summary': tailored_resume.get('summary', ''),
+            'experience': [],
+            'skills': ''
+        }
+        
+        # Convert experience format - extract ALL bullets and let document patcher handle job mapping
+        if 'experience' in tailored_resume and tailored_resume['experience']:
+            # For the simple tailor, we get tailored bullets that should replace JOB1 bullets
+            # The document patcher will handle JOB2 and JOB3 from base resume data
+            all_bullets = []
+            for exp in tailored_resume['experience']:
+                achievements = exp.get('achievements', [])
+                all_bullets.extend(achievements)
+            
+            # Use the tailored bullets for the current position (JOB1)
+            sections['experience'] = all_bullets
+        
+        # Convert skills format to match template expectations
+        if 'skills' in tailored_resume:
+            skills_data = tailored_resume['skills']
+            
+            # The template expects specific skill category placeholders
+            # Let's format the skills to match the template's structure
+            if isinstance(skills_data, dict):
+                skills_parts = []
+                
+                # Map to template's expected skill categories
+                skill_mapping = {
+                    'languages': 'Languages/Frameworks',
+                    'frameworks': 'Cloud/DevOps', 
+                    'tools': 'APIs/Integration',
+                    'technical': 'Architecture/Design',
+                    'databases': 'Databases/Storage',
+                    'monitoring': 'Monitoring/Observability',
+                    'testing': 'Testing/CI-CD'
+                }
+                
+                for key, label in skill_mapping.items():
+                    if key in skills_data and skills_data[key]:
+                        skills_list = skills_data[key]
+                        if isinstance(skills_list, list):
+                            skills_parts.append(f"{label}: {', '.join(skills_list)}")
+                        else:
+                            skills_parts.append(f"{label}: {skills_list}")
+                
+                # Join all skill categories with separators that the template expects
+                sections['skills'] = ' | '.join(skills_parts)
+            else:
+                # If skills is already a string, use as-is
+                sections['skills'] = str(skills_data)
+        
+        # Create session data for document patcher
+        session_data = {
+            'company': company,
+            'role': role
+        }
+        
+        if export_format.lower() == 'docx':
+            # Use document patcher for DOCX
+            logger.debug(f"Using sections for template: {sections}")
+            logger.debug(f"Using session data: {session_data}")
+            
+            output_path = document_patcher.patch_resume_template(
+                sections=sections,
+                session_data=session_data,
+                template_name='placeholder_resume.docx'  # Use the main template
+            )
+            
+            return send_file(
+                output_path,
+                as_attachment=True,
+                download_name=f"{company}_{role}_Resume.docx"
+            )
+            
+        elif export_format.lower() == 'pdf':
+            # For PDF, create DOCX first then convert to PDF
+            try:
+                # First create DOCX using document patcher
+                docx_path = document_patcher.patch_resume_template(
+                    sections=sections,
+                    session_data=session_data,
+                    template_name='placeholder_resume.docx'
+                )
+                
+                # Check if PDF conversion is available
+                if pdf_converter.is_pdf_conversion_available():
+                    # Convert DOCX to PDF
+                    pdf_path = pdf_converter.convert_docx_to_pdf(docx_path)
+                    
+                    return send_file(
+                        pdf_path,
+                        as_attachment=True,
+                        download_name=f"{company}_{role}_Resume.pdf"
+                    )
+                else:
+                    # Fallback to DOCX if PDF conversion not available
+                    logger.warning("PDF conversion not available, returning DOCX")
+                    return send_file(
+                        docx_path,
+                        as_attachment=True,
+                        download_name=f"{company}_{role}_Resume.docx"
+                    )
+                    
+            except Exception as pdf_error:
+                logger.error(f"PDF generation failed: {pdf_error}")
+                # Fallback to DOCX if PDF conversion fails
+                output_path = document_patcher.patch_resume_template(
+                    sections=sections,
+                    session_data=session_data,
+                    template_name='placeholder_resume.docx'
+                )
+                
+                return send_file(
+                    output_path,
+                    as_attachment=True,
+                    download_name=f"{company}_{role}_Resume.docx"
+                )
+        else:
+            return jsonify({'error': f'Unsupported format: {export_format}'}), 400
+            
+    except Exception as e:
+        logger.error(f"Error in export_simple_resume: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    # Check connections on startup
-    if lm_studio.test_connection():
-        logger.info("✅ LM Studio connected successfully")
-    else:
-        logger.warning("⚠️ LM Studio not available - using fallback responses")
-    
-    # Test Gmail connection
-    try:
-        from services.secure_gmail_service import SecureGmailService
-        gmail = SecureGmailService()
-        if gmail.test_connection():
-            logger.info("✅ Gmail connected successfully")
-        else:
-            logger.warning("⚠️ Gmail not connected - check credentials")
-    except Exception as e:
-        logger.warning(f"⚠️ Gmail connection failed: {e}")
-    
     # Start background email sync
     background_sync.start()
     

@@ -19,7 +19,6 @@ import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme/theme-toggle'
 import { ServiceStatus } from '@/components/shared/ServiceStatus'
 import { SettingsPopover } from '@/components/dashboard/SettingsPopover'
-import { useAuth } from '@/contexts/AuthContext'
 
 const navigationItems = [
   {
@@ -61,7 +60,6 @@ export function Navigation() {
   const settingsButtonRef = useRef<HTMLButtonElement>(null)
   const mobileSettingsRef = useRef<HTMLButtonElement>(null)
   const pathname = usePathname()
-  const { user, logout } = useAuth()
 
   return (
     <nav className="bg-background dark:bg-elevation-1 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 backdrop-blur-sm">

@@ -5,8 +5,10 @@ No-nonsense resume generation for personal use
 
 import json
 import logging
+import os
 from typing import Dict, Any, Tuple
 from services.llm_factory import LLMFactory
+from services.resume.resume_parser import ResumeParser
 
 logger = logging.getLogger(__name__)
 
@@ -113,8 +115,7 @@ class SimpleResumeTailor:
         
         # Use the LLM service correctly for content generation
         try:
-            from services.llm_service import LLMService
-            llm = LLMService()
+            llm = self._get_llm_service()
             response = llm.generate_content(prompt)
             
             if not response:
@@ -215,7 +216,8 @@ class SimpleResumeTailor:
         }
     
     def _calculate_keyword_coverage(self, job_description: str, tailored_resume: Dict[str, Any]) -> int:
-        """Simple keyword coverage calculation"""
+        """Calculate keyword coverage using accurate word boundary matching"""
+        import re
         
         # Extract common technical keywords from job description
         jd_lower = job_description.lower()
@@ -229,8 +231,19 @@ class SimpleResumeTailor:
             'cloud', 'architecture', 'backend', 'frontend', 'fullstack', 'devops'
         ]
         
-        jd_keywords = [kw for kw in tech_keywords if kw in jd_lower]
-        matched_keywords = [kw for kw in jd_keywords if kw in resume_text]
+        # Use word boundaries for accurate matching
+        jd_keywords = []
+        for kw in tech_keywords:
+            # Escape special regex characters in keyword
+            pattern = r'\b' + re.escape(kw) + r'\b'
+            if re.search(pattern, jd_lower):
+                jd_keywords.append(kw)
+        
+        matched_keywords = []
+        for kw in jd_keywords:
+            pattern = r'\b' + re.escape(kw) + r'\b'
+            if re.search(pattern, resume_text):
+                matched_keywords.append(kw)
         
         if not jd_keywords:
             return 85  # Default good score
@@ -274,16 +287,23 @@ class SimpleResumeTailor:
     def _get_base_resume_profile(self) -> Dict[str, Any]:
         """Get the base resume profile using ResumeParser"""
         try:
-            from services.resume.resume_parser import ResumeParser
-            parser = ResumeParser(data_dir="data")
+            # Get absolute path to data directory
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            data_dir = os.path.join(current_dir, "..", "data")
+            data_dir_abs = os.path.abspath(data_dir)
+            
+            logger.info(f"Loading resume data from: {data_dir_abs}")
+            
+            parser = ResumeParser(data_dir=data_dir_abs)
             base_content = parser.get_base_resume_content()
             
             # Convert ResumeParser format to SimpleResumeTailor format
             return self._convert_parser_to_tailor_format(base_content)
         except Exception as e:
-            logger.error(f"Failed to load actual resume data: {e}")
+            logger.error(f"Failed to load actual resume data. See traceback for details.", exc_info=True)
             # Fallback to hardcoded data as last resort
             return self._get_fallback_resume_profile()
+    
     
     def _convert_parser_to_tailor_format(self, parser_data: Dict[str, Any]) -> Dict[str, Any]:
         """Convert ResumeParser data format to SimpleResumeTailor expected format"""
@@ -334,6 +354,8 @@ class SimpleResumeTailor:
     
     def _get_fallback_resume_profile(self) -> Dict[str, Any]:
         """Fallback hardcoded resume data if ResumeParser fails"""
+        logger.warning("Using fallback resume data - actual resume not loaded")
+        
         return {
             "summary": "Experienced Software Engineer with expertise in full-stack development, cloud architecture, and scalable system design. Proven track record in building microservices, implementing payment integrations, and leading technical initiatives.",
             "experience": [

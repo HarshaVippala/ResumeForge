@@ -66,9 +66,50 @@ class LLMFactory:
     
     @staticmethod
     def create_default_service() -> LLMService:
-        """Create service using default provider configuration"""
+        """Create service using default provider configuration with automatic fallback"""
         provider = LLMFactory.get_default_provider()
-        return LLMFactory.create_service(provider)
+        
+        # Try the default provider first
+        if provider == "lmstudio":
+            try:
+                service = LLMFactory.create_service(provider)
+                if service.is_available():
+                    logger.info(f"Using LMStudio (local) as LLM provider")
+                    return service
+                else:
+                    logger.info("LMStudio not available, falling back to cloud provider")
+            except Exception as e:
+                logger.info(f"LMStudio initialization failed: {e}, falling back to cloud provider")
+        
+        # If LMStudio is not available or not the default, try cloud providers
+        # First try OpenAI if configured
+        if os.getenv("OPENAI_API_KEY"):
+            try:
+                service = LLMFactory.create_service("openai")
+                logger.info("Using OpenAI as LLM provider")
+                return service
+            except Exception as e:
+                logger.warning(f"OpenAI initialization failed: {e}")
+        
+        # Then try Gemini if configured
+        if os.getenv("GEMINI_API_KEY"):
+            try:
+                service = LLMFactory.create_service("gemini")
+                logger.info("Using Gemini as LLM provider")
+                return service
+            except Exception as e:
+                logger.warning(f"Gemini initialization failed: {e}")
+        
+        # If we still don't have a provider, try the original default
+        if provider != "lmstudio":
+            try:
+                service = LLMFactory.create_service(provider)
+                logger.info(f"Using {provider} as LLM provider")
+                return service
+            except Exception as e:
+                logger.error(f"Failed to initialize {provider}: {e}")
+        
+        raise ValueError("No LLM provider available. Please configure OPENAI_API_KEY or ensure LMStudio is running.")
     
     @staticmethod
     def list_available_providers() -> list:

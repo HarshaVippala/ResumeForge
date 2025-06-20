@@ -8,7 +8,7 @@ import json
 from datetime import datetime, date
 from typing import Dict, List, Any, Optional
 from flask import Blueprint, request, jsonify
-from middleware.auth import auth
+# Authentication removed - no auth needed for personal use
 from services.database import DatabaseManager
 from services.supabase_manager import SupabaseDatabaseManager
 from config.database_config import db_config
@@ -269,7 +269,7 @@ class ApplicationTrackingService:
 tracking_service = ApplicationTrackingService(db_manager)
 
 @applications_bp.route('/api/applications', methods=['GET'])
-@auth.require_auth
+# Auth removed for personal use
 def get_applications():
     """
     Get job applications for the authenticated user
@@ -282,7 +282,7 @@ def get_applications():
     """
     
     try:
-        user_id = request.user['user_id']
+        user_id = 'personal'  # Fixed user ID for personal use
         
         # Parse query parameters
         page = int(request.args.get('page', 1))
@@ -322,12 +322,12 @@ def get_applications():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @applications_bp.route('/api/applications/<application_id>', methods=['GET'])
-@auth.require_auth
+# Auth removed for personal use
 def get_application_details(application_id):
     """Get detailed information for a specific application"""
     
     try:
-        user_id = request.user['user_id']
+        user_id = 'personal'  # Fixed user ID for personal use
         
         application = tracking_service.get_application_by_id(user_id, application_id)
         
@@ -344,12 +344,12 @@ def get_application_details(application_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @applications_bp.route('/api/applications/<application_id>/status', methods=['PUT'])
-@auth.require_auth
+# Auth removed for personal use
 def update_application_status(application_id):
     """Update application status"""
     
     try:
-        user_id = request.user['user_id']
+        user_id = 'personal'  # Fixed user ID for personal use
         data = request.get_json()
         
         if not data or 'status' not in data:
@@ -379,12 +379,12 @@ def update_application_status(application_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @applications_bp.route('/api/applications/stats', methods=['GET'])
-@auth.require_auth
+# Auth removed for personal use
 def get_application_statistics():
     """Get application statistics for the user"""
     
     try:
-        user_id = request.user['user_id']
+        user_id = 'personal'  # Fixed user ID for personal use
         
         stats = tracking_service.get_application_stats(user_id)
         
