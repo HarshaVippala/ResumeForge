@@ -9,7 +9,7 @@ Add these to your Vercel project settings:
 ```
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
-GOOGLE_REDIRECT_URI=https://resume-forge.vercel.app/api/oauth/callback
+GOOGLE_REDIRECT_URI=https://jobs.harshavippala.com/api/oauth/callback
 ```
 
 ## 2. Update OAuth Redirect URIs in Google Console
@@ -17,7 +17,7 @@ GOOGLE_REDIRECT_URI=https://resume-forge.vercel.app/api/oauth/callback
 1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
 2. Click on your OAuth 2.0 Client ID
 3. Add these Authorized redirect URIs:
-   - `https://resume-forge.vercel.app/api/oauth/callback`
+   - `https://jobs.harshavippala.com/api/oauth/callback`
    - `http://localhost:3000/api/oauth/callback` (for local testing)
 4. Save changes
 
@@ -35,7 +35,7 @@ Skip Pub/Sub setup and use periodic sync instead. The app will check for new ema
 3. Add these additional environment variables:
    ```
    PUBSUB_TOPIC_NAME=projects/YOUR_PROJECT_ID/topics/gmail-push
-   PUBSUB_PUSH_ENDPOINT=https://resume-forge.vercel.app/api/gmail/webhook
+   PUBSUB_PUSH_ENDPOINT=https://jobs.harshavippala.com/api/gmail/webhook
    ```
 
 ## 4. Test Locally First
