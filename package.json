@@ -15,7 +15,8 @@
     "@vercel/node": "^3.0.0",
     "ai": "^3.0.0",
     "openai": "^4.24.0",
-    "zod": "^3.22.0"
+    "zod": "^3.22.0",
+    "jspdf": "^2.5.1"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
