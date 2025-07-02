@@ -11,7 +11,7 @@ export const runtime = 'edge';
  */
 async function handlePOST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await req.json() as { content?: string; jobDescription?: string };
     
     // When implementing, validate any text inputs
     // Example validation for common fields:

@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAuthentication } from '@/api/_lib/auth/webauthn'
-import { createClient } from '@/api/_lib/db/client'
-import { createSessionToken, setAuthCookie } from '@/api/_lib/auth/session'
+import { verifyAuthentication } from '../../_lib/auth/webauthn'
+import { createClient } from '../../_lib/db/client'
+import { createSessionToken, setAuthCookie } from '../../_lib/auth/session'
+
+interface VerifyAuthenticationBody {
+  credential: any; // WebAuthn credential response
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body: VerifyAuthenticationBody = await request.json()
     const { credential } = body
 
     // Get challenge from cookie

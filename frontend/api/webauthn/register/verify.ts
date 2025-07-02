@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyRegistration } from '@/api/_lib/auth/webauthn'
-import { createClient } from '@/api/_lib/db/client'
-import { createSessionToken, setAuthCookie } from '@/api/_lib/auth/session'
+import { verifyRegistration } from '../../_lib/auth/webauthn'
+import { createClient } from '../../_lib/db/client'
+import { createSessionToken, setAuthCookie } from '../../_lib/auth/session'
 import base64url from 'base64url'
+
+interface VerifyRegistrationBody {
+  credential: any; // WebAuthn credential response
+  deviceName?: string;
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body: VerifyRegistrationBody = await request.json()
     const { credential: credentialResponse, deviceName = 'Unknown Device' } = body
 
     // Get challenge from cookie

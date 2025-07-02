@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifySessionToken } from '@/api/_lib/auth/session'
+import { verifySessionToken } from '../_lib/auth/session'
 
 export async function GET(request: NextRequest) {
   try {

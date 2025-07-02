@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateRegistrationOptionsForUser } from '@/api/_lib/auth/webauthn'
-import { createClient } from '@/api/_lib/db/client'
+import { generateRegistrationOptionsForUser } from '../../_lib/auth/webauthn'
+import { createClient } from '../../_lib/db/client'
 
 export async function GET(request: NextRequest) {
   try {

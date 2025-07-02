@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+// import { NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
 import jwksClient from 'jwks-rsa';
 import { getSupabase } from '../db';
