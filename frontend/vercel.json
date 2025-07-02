@@ -3,5 +3,13 @@
   "outputDirectory": ".next",
   "framework": "nextjs",
   "installCommand": "npm install",
-  "devCommand": "npm run dev"
+  "devCommand": "npm run dev",
+  "functions": {
+    "api/*.ts": {
+      "maxDuration": 10
+    },
+    "api/**/*.ts": {
+      "maxDuration": 10
+    }
+  }
 }
