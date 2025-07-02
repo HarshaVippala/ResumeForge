@@ -177,7 +177,7 @@ export class GmailService {
   /**
    * Process a single email message
    */
-  private async processMessage(gmail: gmail_v1.Gmail, messageId: string, userId: string): Promise<void> {
+  private async processMessage(gmail: gmail_v1.Gmail, messageId: string, _userId: string): Promise<void> {
     const db = getSupabase();
 
     try {

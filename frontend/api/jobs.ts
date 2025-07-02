@@ -197,7 +197,7 @@ async function handleGetSavedJobs(req: VercelRequest, res: VercelResponse) {
 }
 
 // Get job statistics
-async function handleGetStats(req: VercelRequest, res: VercelResponse) {
+async function handleGetStats(_req: VercelRequest, res: VercelResponse) {
   const supabase = getSupabase();
   
   const { count: totalJobs } = await supabase
@@ -247,7 +247,7 @@ async function handleGetStats(req: VercelRequest, res: VercelResponse) {
 }
 
 // Get available filters
-async function handleGetFilters(req: VercelRequest, res: VercelResponse) {
+async function handleGetFilters(_req: VercelRequest, res: VercelResponse) {
   const supabase = getSupabase();
   
   const [companies, locations, platforms, experienceLevels, jobTypes] = await Promise.all([
@@ -277,7 +277,7 @@ async function handleGetFilters(req: VercelRequest, res: VercelResponse) {
 }
 
 // Get single job
-async function handleGetJob(req: VercelRequest, res: VercelResponse, id: string) {
+async function handleGetJob(_req: VercelRequest, res: VercelResponse, id: string) {
   if (!id) {
     return res.status(400).json({ error: 'Job ID is required' });
   }
