@@ -189,7 +189,7 @@ class BackgroundSyncService {
       // Use database endpoint for fast background sync
       // On first sync, get more days for initial data
       const daysBack = this.isFirstSync ? 14 : 7
-      const response = await fetch(getApiUrl(`/api/emails/activities?days_back=${daysBack}&limit=50`), {
+      const response = await fetch(getApiUrl(`/api/email?action=activities&days_back=${daysBack}&limit=50`), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
