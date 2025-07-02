@@ -1,4 +1,3 @@
-import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 export const runtime = 'edge';
@@ -6,7 +5,7 @@ export const runtime = 'edge';
 /**
  * List available LLM providers
  */
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     // Return currently configured provider
     const providers = [

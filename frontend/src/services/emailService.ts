@@ -3,7 +3,7 @@
  * NO SENDING CAPABILITIES - READ ONLY
  */
 
-const API_BASE_URL = 'http://localhost:5001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export interface EmailActivity {
   id: string;
@@ -59,7 +59,7 @@ class EmailService {
    */
   async syncEmails(): Promise<DashboardData> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/emails/sync`, {
+      const response = await fetch(`${this.baseUrl}/api/email?action=sync`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ class EmailService {
    */
   async getEmailActivities(): Promise<EmailActivity[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/emails/activities`);
+      const response = await fetch(`${this.baseUrl}/api/email?action=activities`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch email activities: ${response.status}`);
@@ -116,7 +116,7 @@ class EmailService {
     database_status: string;
   }> {
     try {
-      const response = await fetch(`${this.baseUrl}/health`);
+      const response = await fetch(`${this.baseUrl}/api/health`);
       
       if (!response.ok) {
         throw new Error(`Health check failed: ${response.status}`);

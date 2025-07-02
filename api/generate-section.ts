@@ -1,4 +1,3 @@
-import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 export const runtime = 'edge';
@@ -7,7 +6,7 @@ export const runtime = 'edge';
  * Generate individual resume section
  * TODO: Implement this endpoint
  */
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
     // Return 501 Not Implemented for now
     return NextResponse.json(

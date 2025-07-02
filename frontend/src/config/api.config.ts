@@ -36,10 +36,6 @@ export const apiConfig = {
     tailorResumeComplete: '/api/tailor-resume-complete',
     exportSimpleResume: '/api/export-simple-resume',
     
-    // Resume Library
-    resumeLibrary: '/api/resume-library',
-    resumeDetails: (id: string) => `/api/resume-library/${id}`,
-    downloadResume: (id: string) => `/api/resume-library/${id}/download`,
     
     // Job Scraping - Combined endpoint with actions
     jobs: '/api/jobs',
@@ -59,9 +55,6 @@ export const apiConfig = {
     emailSyncStatus: '/api/email?action=sync-status',
     emailProcess: '/api/email?action=process',
     
-    // OAuth - Combined endpoint with actions
-    oauthAuthorize: '/api/oauth?action=authorize',
-    oauthCallback: '/api/oauth?action=callback',
     
     // Job Applications
     applications: '/api/applications',
