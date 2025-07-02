@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     if (action === 'activities') {
       return await handleGetActivities(req);
     } else if (action === 'sync-status') {
-      return await handleGetSyncStatus(req);
+      return await handleGetSyncStatus();
     } else {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
