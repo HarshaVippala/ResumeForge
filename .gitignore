@@ -124,3 +124,6 @@ htmlcov/
 test_outputs/
 test_*.txt
 test_*.log
+
+# Claude configuration file
+CLAUDE.md

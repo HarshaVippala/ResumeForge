@@ -4,7 +4,7 @@
  */
 
 export const apiConfig = {
-  baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+  baseUrl: process.env.NEXT_PUBLIC_API_URL || '',
   timeout: parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '30000'),
   
   // Authentication disabled for personal use
