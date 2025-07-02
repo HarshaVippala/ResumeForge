@@ -438,7 +438,7 @@ class BackgroundJobScrapingService {
    */
   private async loadJobsFromDatabase() {
     try {
-      const response = await fetch(getApiUrl('/api/jobs?limit=20&sort_by=date_posted&sort_order=desc'))
+      const response = await fetch(getApiUrl(`${apiConfig.endpoints.jobs}?limit=20&sort_by=date_posted&sort_order=desc`))
       
       if (response.ok) {
         const result = await response.json()
@@ -466,7 +466,7 @@ class BackgroundJobScrapingService {
    */
   private async loadJobStatistics() {
     try {
-      const response = await fetch(getApiUrl('/api/jobs/stats'))
+      const response = await fetch(getApiUrl(apiConfig.endpoints.jobStats))
       
       if (response.ok) {
         const result = await response.json()
@@ -503,7 +503,7 @@ class BackgroundJobScrapingService {
         results_wanted: 50 // Moderate number
       }
 
-      const response = await fetch(getApiUrl('/api/jobs/scrape'), {
+      const response = await fetch(getApiUrl(apiConfig.endpoints.jobScrape), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

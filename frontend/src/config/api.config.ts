@@ -41,20 +41,27 @@ export const apiConfig = {
     resumeDetails: (id: string) => `/api/resume-library/${id}`,
     downloadResume: (id: string) => `/api/resume-library/${id}/download`,
     
-    // Job Scraping
+    // Job Scraping - Combined endpoint with actions
     jobs: '/api/jobs',
-    jobDetails: (id: string) => `/api/jobs/${id}`,
+    jobDetails: (id: string) => `/api/jobs?action=get&id=${id}`,
     jobScrape: '/api/jobs/scrape',
-    jobStats: '/api/jobs/stats',
-    jobFilters: '/api/jobs/filters',
-    jobSave: '/api/jobs/save',
-    jobsSaved: '/api/jobs/saved',
+    jobStats: '/api/jobs?action=stats',
+    jobFilters: '/api/jobs?action=filters',
+    jobSave: '/api/jobs?action=save',
+    jobsSaved: '/api/jobs?action=saved',
     
     // Service Status
-    serviceStatus: '/api/service-status',
+    serviceStatus: '/api/health',
     
-    // Email Service
-    sendEmail: '/api/send-email',
+    // Email Service - Combined endpoint with actions
+    emailActivities: '/api/email?action=activities',
+    emailSync: '/api/email?action=sync',
+    emailSyncStatus: '/api/email?action=sync-status',
+    emailProcess: '/api/email?action=process',
+    
+    // OAuth - Combined endpoint with actions
+    oauthAuthorize: '/api/oauth?action=authorize',
+    oauthCallback: '/api/oauth?action=callback',
     
     // Authentication endpoints removed
   }
