@@ -2,6 +2,15 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { GmailPubSubService } from '../_lib/gmail/pubsub';
 
+interface PubSubMessage {
+  message: {
+    data: string;
+    messageId: string;
+    publishTime: string;
+  };
+  subscription: string;
+}
+
 export const runtime = 'edge';
 
 /**
@@ -24,7 +33,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Parse the Pub/Sub message
-    const body = await req.json();
+    const body = await req.json() as PubSubMessage;
     
     // Process the message asynchronously
     // In Edge runtime, we need to complete quickly

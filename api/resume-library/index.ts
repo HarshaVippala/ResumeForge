@@ -9,7 +9,7 @@ export const runtime = 'edge';
  */
 
 // GET: List all resumes
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     // Return empty array for now - prevents frontend crashes
     return NextResponse.json({
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 }
 
 // POST: Create new resume
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
     return NextResponse.json(
       { 

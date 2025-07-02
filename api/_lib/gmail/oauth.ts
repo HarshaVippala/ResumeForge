@@ -1,5 +1,4 @@
 import { google } from 'googleapis';
-import { OAuth2Client } from 'google-auth-library';
 import { getSupabase } from '../db';
 import crypto from 'crypto';
 
@@ -18,7 +17,7 @@ interface TokenData {
 }
 
 export class GmailOAuthService {
-  private oauth2Client: OAuth2Client;
+  private oauth2Client: any; // Using any for googleapis OAuth2Client
   private encryptionKey: Buffer;
 
   constructor() {
@@ -109,7 +108,7 @@ export class GmailOAuthService {
   /**
    * Get authenticated OAuth client
    */
-  async getAuthenticatedClient(userId: string): Promise<OAuth2Client | null> {
+  async getAuthenticatedClient(userId: string): Promise<any> {
     const tokens = await this.getStoredTokens(userId);
     if (!tokens) return null;
 

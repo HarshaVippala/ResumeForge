@@ -118,7 +118,7 @@ async function handleGetActivities(req: NextRequest) {
 }
 
 // Get sync status
-async function handleGetSyncStatus(req: NextRequest) {
+async function handleGetSyncStatus() {
   const userId = 'default_user';
   const db = getSupabase();
   
@@ -144,7 +144,7 @@ async function handleGetSyncStatus(req: NextRequest) {
 
 // Sync emails
 async function handleSync(req: NextRequest) {
-  const body = await req.json();
+  const body = await req.json() as { userId?: string; syncType?: string };
   const { userId = 'default_user', syncType = 'incremental' } = body;
   
   const gmailService = new GmailService();
@@ -175,7 +175,7 @@ async function handleSync(req: NextRequest) {
 
 // Process emails with AI
 async function handleProcessEmails(req: NextRequest) {
-  const body = await req.json();
+  const body = await req.json() as { emailIds?: string[] };
   const { emailIds } = body;
   
   if (!emailIds || !Array.isArray(emailIds)) {

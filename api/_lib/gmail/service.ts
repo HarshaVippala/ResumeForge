@@ -66,7 +66,7 @@ export class GmailService {
         // Process messages in batches
         for (const message of messages) {
           if (message.id) {
-            await this.processMessage(gmail, message.id, userId);
+            await this.processMessage(gmail, message.id);
             totalProcessed++;
           }
         }
@@ -141,7 +141,7 @@ export class GmailService {
           if (historyItem.messagesAdded) {
             for (const added of historyItem.messagesAdded) {
               if (added.message?.id) {
-                await this.processMessage(gmail, added.message.id, userId);
+                await this.processMessage(gmail, added.message.id);
               }
             }
           }
@@ -177,7 +177,7 @@ export class GmailService {
   /**
    * Process a single email message
    */
-  private async processMessage(gmail: gmail_v1.Gmail, messageId: string, userId: string): Promise<void> {
+  private async processMessage(gmail: gmail_v1.Gmail, messageId: string): Promise<void> {
     const db = getSupabase();
 
     try {
