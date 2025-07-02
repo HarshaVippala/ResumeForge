@@ -84,11 +84,8 @@ export async function generateFromTemplate(
     // Prepare template data
     const templateData = prepareTemplateData(tailoredResume, personalInfo);
     
-    // Set the data
-    doc.setData(templateData);
-    
-    // Render the document
-    doc.render();
+    // Render the document with data
+    doc.render(templateData);
     
     // Generate DOCX buffer
     const docxBuffer = doc.getZip().generate({
