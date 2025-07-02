@@ -68,15 +68,16 @@ export default function LoginPage() {
   }
 
   const getTimeBasedEmoji = () => {
-    if (!currentTime) return '👋'
+    if (!currentTime) return ''
     const hour = currentTime.getHours()
-    if (hour >= 5 && hour < 12) return '☀️'
-    if (hour >= 12 && hour < 17) return '🌤️'
-    if (hour >= 17 && hour < 22) return '🌅'
-    return '🌙'
+    if (hour >= 5 && hour < 12) return ''
+    if (hour >= 12 && hour < 17) return ''
+    if (hour >= 17 && hour < 22) return ''
+    return ''
   }
 
   const getTimeBasedGradient = () => {
+    if (!currentTime) return 'from-blue-500 via-purple-500 to-pink-500'
     const hour = currentTime.getHours()
     if (hour >= 5 && hour < 12) return 'from-amber-500 via-orange-500 to-yellow-500'
     if (hour >= 12 && hour < 17) return 'from-blue-500 via-cyan-500 to-teal-500'
