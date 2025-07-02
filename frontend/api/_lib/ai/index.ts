@@ -1,17 +1,17 @@
-import { OpenAI } from 'openai';
+import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 
-// Initialize OpenAI client
-let openaiClient: OpenAI | null = null;
+// Initialize Gemini client
+let geminiClient: GoogleGenerativeAI | null = null;
 
-function getOpenAIClient(): OpenAI {
-  if (!openaiClient) {
-    const apiKey = process.env.OPENAI_API_KEY;
+function getGeminiClient(): GoogleGenerativeAI {
+  if (!geminiClient) {
+    const apiKey = process.env.GOOGLE_AI_API_KEY;
     if (!apiKey) {
-      throw new Error('OPENAI_API_KEY is not configured');
+      throw new Error('GOOGLE_AI_API_KEY is not configured');
     }
-    openaiClient = new OpenAI({ apiKey });
+    geminiClient = new GoogleGenerativeAI(apiKey);
   }
-  return openaiClient;
+  return geminiClient;
 }
 
 export interface JobAnalysisRequest {
@@ -54,10 +54,12 @@ export interface TailoredResume {
  * AI Service for resume generation and job analysis
  */
 export class AIService {
-  private openai: OpenAI;
+  private model: GenerativeModel;
 
   constructor() {
-    this.openai = getOpenAIClient();
+    const client = getGeminiClient();
+    const modelName = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+    this.model = client.getGenerativeModel({ model: modelName });
   }
 
   /**
@@ -80,25 +82,29 @@ Return a JSON object with these categories:
 
 Focus on extracting concrete, specific requirements. Be thorough but concise.`;
 
-    const response = await this.openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert resume writer and job requirement analyst. Extract key requirements from job descriptions in a structured format.'
-        },
+    const result = await this.model.generateContentStream({
+      contents: [
         {
           role: 'user',
-          content: prompt
+          parts: [
+            {
+              text: `You are an expert resume writer and job requirement analyst. Extract key requirements from job descriptions in a structured format.
+
+${prompt}`
+            }
+          ]
         }
       ],
-      temperature: 0.3,
-      stream: true,
-      response_format: { type: 'json_object' }
+      generationConfig: {
+        temperature: 0.3,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 2048,
+      },
     });
 
-    // Return the OpenAI stream directly
-    return response;
+    // Return the Gemini stream
+    return result.stream;
   }
 
   /**
@@ -123,28 +129,43 @@ Return a JSON object with these categories:
 
 Focus on extracting concrete, specific requirements. Be thorough but concise.`;
 
-    const response = await this.openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert resume writer and job requirement analyst. Extract key requirements from job descriptions in a structured format.'
-        },
+    const result = await this.model.generateContent({
+      contents: [
         {
           role: 'user',
-          content: prompt
+          parts: [
+            {
+              text: `You are an expert resume writer and job requirement analyst. Extract key requirements from job descriptions in a structured format.
+
+${prompt}`
+            }
+          ]
         }
       ],
-      temperature: 0.3,
-      response_format: { type: 'json_object' }
+      generationConfig: {
+        temperature: 0.3,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 2048,
+      },
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No response from OpenAI');
+    const response = result.response;
+    const text = response.text();
+    
+    if (!text) {
+      throw new Error('No response from Gemini');
     }
 
-    return JSON.parse(content) as JobAnalysis;
+    // Clean the response text to ensure valid JSON
+    const cleanedText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    try {
+      return JSON.parse(cleanedText) as JobAnalysis;
+    } catch (error) {
+      console.error('Failed to parse Gemini response:', text);
+      throw new Error('Invalid JSON response from Gemini');
+    }
   }
 
   /**
@@ -187,25 +208,29 @@ Return a JSON object with this structure:
   }
 }`;
 
-    const response = await this.openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert resume writer. Create compelling, ATS-friendly resumes tailored to specific positions. Focus on quantifiable achievements and relevant keywords.'
-        },
+    const result = await this.model.generateContentStream({
+      contents: [
         {
           role: 'user',
-          content: prompt
+          parts: [
+            {
+              text: `You are an expert resume writer. Create compelling, ATS-friendly resumes tailored to specific positions. Focus on quantifiable achievements and relevant keywords.
+
+${prompt}`
+            }
+          ]
         }
       ],
-      temperature: 0.4,
-      stream: true,
-      response_format: { type: 'json_object' }
+      generationConfig: {
+        temperature: 0.4,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 4096,
+      },
     });
 
-    // Return the OpenAI stream directly
-    return response;
+    // Return the Gemini stream
+    return result.stream;
   }
 
   /**
@@ -248,28 +273,43 @@ Return a JSON object with this structure:
   }
 }`;
 
-    const response = await this.openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert resume writer. Create compelling, ATS-friendly resumes tailored to specific positions. Focus on quantifiable achievements and relevant keywords.'
-        },
+    const result = await this.model.generateContent({
+      contents: [
         {
           role: 'user',
-          content: prompt
+          parts: [
+            {
+              text: `You are an expert resume writer. Create compelling, ATS-friendly resumes tailored to specific positions. Focus on quantifiable achievements and relevant keywords.
+
+${prompt}`
+            }
+          ]
         }
       ],
-      temperature: 0.4,
-      response_format: { type: 'json_object' }
+      generationConfig: {
+        temperature: 0.4,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 4096,
+      },
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No response from OpenAI');
+    const response = result.response;
+    const text = response.text();
+    
+    if (!text) {
+      throw new Error('No response from Gemini');
     }
 
-    return JSON.parse(content) as TailoredResume;
+    // Clean the response text to ensure valid JSON
+    const cleanedText = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    try {
+      return JSON.parse(cleanedText) as TailoredResume;
+    } catch (error) {
+      console.error('Failed to parse Gemini response:', text);
+      throw new Error('Invalid JSON response from Gemini');
+    }
   }
 
   /**

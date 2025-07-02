@@ -10,18 +10,18 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(request: NextRequest) {
   try {
     // Check service connections (simplified for dev)
-    const [openaiStatus, databaseStatus] = await Promise.all([
-      checkOpenAIConnection(),
+    const [geminiStatus, databaseStatus] = await Promise.all([
+      checkGeminiConnection(),
       checkDatabaseConnection()
     ]);
 
-    const allHealthy = openaiStatus === 'connected' && databaseStatus === 'connected';
+    const allHealthy = geminiStatus === 'connected' && databaseStatus === 'connected';
 
     // Health response compatible with ServiceStatus component
     const healthStatus = {
       status: allHealthy ? 'healthy' : 'degraded',
       timestamp: new Date().toISOString(),
-      lm_studio_connected: openaiStatus === 'connected',
+      ai_service_connected: geminiStatus === 'connected',
       database_status: databaseStatus,
       database_type: 'postgresql' as const,
       // Additional info for debugging
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       version: '2.0.0-ts-dev',
       services: {
         api: 'operational',
-        openai: openaiStatus,
+        gemini: geminiStatus,
         supabase: databaseStatus
       },
       migration_status: 'in_progress',
@@ -51,15 +51,15 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Check OpenAI API connectivity
+ * Check Google Gemini API connectivity
  */
-async function checkOpenAIConnection(): Promise<string> {
+async function checkGeminiConnection(): Promise<string> {
   try {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!process.env.GOOGLE_AI_API_KEY) {
       return 'not_configured';
     }
-    // Simple check - just verify API key format
-    return process.env.OPENAI_API_KEY.startsWith('sk-') ? 'connected' : 'invalid_key';
+    // Simple check - just verify API key exists
+    return process.env.GOOGLE_AI_API_KEY.length > 0 ? 'connected' : 'invalid_key';
   } catch (error) {
     return 'error';
   }

@@ -12,6 +12,7 @@
     "env:validate": "node -r esbuild-register/dist/node.js -e \"require('./api/_lib/config/validate-env.ts').validateEnvOrThrow()\""
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^5.1.1",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-label": "^2.1.7",

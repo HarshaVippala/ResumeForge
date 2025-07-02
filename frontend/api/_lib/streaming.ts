@@ -1,11 +1,10 @@
-import { Stream } from 'openai/streaming';
-import { ChatCompletionChunk } from 'openai/resources';
+import { GenerateContentStreamResult } from '@google/generative-ai';
 
 /**
- * Convert OpenAI stream to Response for Vercel
+ * Convert Gemini stream to Response for Vercel
  */
 export async function streamToResponse(
-  stream: Stream<ChatCompletionChunk>
+  stream: AsyncGenerator<any, any, unknown>
 ): Promise<Response> {
   const encoder = new TextEncoder();
 
@@ -13,9 +12,9 @@ export async function streamToResponse(
     async start(controller) {
       try {
         for await (const chunk of stream) {
-          const content = chunk.choices[0]?.delta?.content;
-          if (content) {
-            controller.enqueue(encoder.encode(content));
+          const text = chunk.text();
+          if (text) {
+            controller.enqueue(encoder.encode(text));
           }
         }
       } catch (error) {

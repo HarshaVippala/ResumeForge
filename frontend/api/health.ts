@@ -16,18 +16,18 @@ export default async function handler(
 
   try {
     // Check all service connections
-    const [openaiStatus, supabaseStatus] = await Promise.all([
-      checkOpenAIConnection(),
+    const [geminiStatus, supabaseStatus] = await Promise.all([
+      checkGeminiConnection(),
       checkSupabaseConnection()
     ]);
 
-    const allHealthy = openaiStatus === 'connected' && supabaseStatus === 'connected';
+    const allHealthy = geminiStatus === 'connected' && supabaseStatus === 'connected';
 
     // Health response compatible with ServiceStatus component
     const healthStatus = {
       status: allHealthy ? 'healthy' : 'degraded',
       timestamp: new Date().toISOString(),
-      lm_studio_connected: openaiStatus === 'connected',
+      ai_service_connected: geminiStatus === 'connected',
       database_status: supabaseStatus,
       database_type: 'postgresql' as const,
       // Additional info for debugging
@@ -35,7 +35,7 @@ export default async function handler(
       version: '2.0.0-ts',
       services: {
         api: 'operational',
-        openai: openaiStatus,
+        gemini: geminiStatus,
         supabase: supabaseStatus
       },
       migration_status: 'in_progress'
@@ -53,15 +53,15 @@ export default async function handler(
 }
 
 /**
- * Check OpenAI API connectivity
+ * Check Google Gemini API connectivity
  */
-async function checkOpenAIConnection(): Promise<string> {
+async function checkGeminiConnection(): Promise<string> {
   try {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!process.env.GOOGLE_AI_API_KEY) {
       return 'not_configured';
     }
-    // Simple check - just verify API key format
-    return process.env.OPENAI_API_KEY.startsWith('sk-') ? 'connected' : 'invalid_key';
+    // Simple check - just verify API key exists
+    return process.env.GOOGLE_AI_API_KEY.length > 0 ? 'connected' : 'invalid_key';
   } catch (error) {
     return 'error';
   }

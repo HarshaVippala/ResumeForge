@@ -76,7 +76,7 @@ const ENV_VARS: EnvVar[] = [
 
   // AI Service
   {
-    name: 'GOOGLE_GENERATIVE_AI_API_KEY',
+    name: 'GOOGLE_AI_API_KEY',
     required: true,
     sensitive: true,
     pattern: /^AIza/,
@@ -249,7 +249,7 @@ export function validateEnv(): ValidationResult {
 
   // Check for deprecated variables
   if (process.env.OPENAI_API_KEY) {
-    warnings.push('[DEPRECATED] OPENAI_API_KEY is set but no longer used (replaced by GOOGLE_GENERATIVE_AI_API_KEY)');
+    warnings.push('[DEPRECATED] OPENAI_API_KEY is set but no longer used (replaced by GOOGLE_AI_API_KEY)');
   }
 
   const requiredCount = ENV_VARS.filter(v => v.required).length;
