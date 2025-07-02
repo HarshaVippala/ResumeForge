@@ -54,7 +54,8 @@ export async function GET(req: NextRequest) {
       
       // Exchange code for tokens
       const userId = 'default_user'; // In production, get from session
-      await oauthService.handleCallback(code, userId);
+      const tokens = await oauthService.getTokens(code);
+      await oauthService.storeTokens(userId, tokens);
       
       // Clear state cookie
       const response = NextResponse.redirect('/dashboard/generator?success=gmail_connected');
