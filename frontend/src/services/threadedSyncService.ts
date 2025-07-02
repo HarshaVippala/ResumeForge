@@ -154,7 +154,7 @@ class ThreadedSyncService {
    */
   async getThreadEmails(threadId: string): Promise<any[]> {
     try {
-      const response = await fetch(getApiUrl(`/api/emails/threads/${threadId}/emails`), {
+      const response = await fetch(getApiUrl(`/api/email?action=thread-emails&threadId=${threadId}`), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -206,7 +206,7 @@ class ThreadedSyncService {
       // Step 1: If manual sync, trigger refresh to get fresh Gmail data
       if (isManual) {
         console.log('🧵 Manual sync: Triggering Gmail refresh first...')
-        const refreshResponse = await fetch(getApiUrl(`/api/emails/refresh`), {
+        const refreshResponse = await fetch(getApiUrl(`/api/email?action=sync`), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -220,7 +220,7 @@ class ThreadedSyncService {
       }
       
       // Step 2: Get threaded dashboard data
-      const response = await fetch(getApiUrl(`/api/emails/threads?days_back=30&limit=100`), {
+      const response = await fetch(getApiUrl(`/api/email?action=activities&days_back=30&limit=100`), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
