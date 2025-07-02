@@ -15,25 +15,20 @@ export async function GET() {
   try {
     const db = getSupabase();
     
+    // First try to get applications without join to isolate the issue
     const { data: applications, error } = await db
       .from('job_applications')
-      .select(`
-        *,
-        saved_jobs (
-          id,
-          job_title,
-          company,
-          location,
-          salary_range,
-          job_url
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching applications:', error);
+      // Return empty array for now if table doesn't exist
+      if (error.code === 'PGRST116') {
+        return NextResponse.json({ applications: [] });
+      }
       return NextResponse.json(
-        { error: 'Failed to fetch applications' },
+        { error: `Database error: ${error.message}` },
         { status: 500 }
       );
     }
@@ -42,7 +37,7 @@ export async function GET() {
   } catch (error) {
     console.error('Applications API error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     );
   }
