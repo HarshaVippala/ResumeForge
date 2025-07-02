@@ -17,7 +17,7 @@ interface TokenData {
 }
 
 export class GmailOAuthService {
-  private oauth2Client: any; // Using any for googleapis OAuth2Client
+  private oauth2Client: any; // Using any type for googleapis OAuth2Client to avoid type conflicts
   private encryptionKey: Buffer;
 
   constructor() {
