@@ -106,6 +106,24 @@ export class GmailOAuthService {
   }
 
   /**
+   * Handle OAuth callback - exchange code for tokens and store them
+   */
+  async handleCallback(code: string, userId: string): Promise<TokenData | null> {
+    try {
+      // Exchange code for tokens
+      const tokens = await this.getTokens(code);
+      
+      // Store tokens encrypted in database
+      await this.storeTokens(userId, tokens);
+      
+      return tokens;
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      return null;
+    }
+  }
+
+  /**
    * Get authenticated OAuth client
    */
   async getAuthenticatedClient(userId: string): Promise<any> {
