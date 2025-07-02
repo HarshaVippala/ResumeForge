@@ -51,7 +51,7 @@ export async function GET() {
 // POST: Create new job application
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await req.json() as { jobId?: string; status?: string };
     const { jobId, status = 'planned' } = body;
 
     if (!jobId) {
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
 // PUT: Update job application
 export async function PUT(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await req.json() as { id?: string; [key: string]: any };
     const { id, ...updates } = body;
 
     if (!id) {

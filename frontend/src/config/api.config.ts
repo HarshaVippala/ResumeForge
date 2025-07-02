@@ -44,7 +44,7 @@ export const apiConfig = {
     // Job Scraping - Combined endpoint with actions
     jobs: '/api/jobs',
     jobDetails: (id: string) => `/api/jobs?action=get&id=${id}`,
-    jobScrape: '/api/jobs/scrape',
+    jobScrape: '/api/jobs?action=scrape',
     jobStats: '/api/jobs?action=stats',
     jobFilters: '/api/jobs?action=filters',
     jobSave: '/api/jobs?action=save',
@@ -62,6 +62,9 @@ export const apiConfig = {
     // OAuth - Combined endpoint with actions
     oauthAuthorize: '/api/oauth?action=authorize',
     oauthCallback: '/api/oauth?action=callback',
+    
+    // Job Applications
+    applications: '/api/applications',
     
     // Authentication endpoints removed
   }

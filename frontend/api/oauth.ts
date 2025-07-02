@@ -35,30 +35,36 @@ export async function GET(req: NextRequest) {
       // Handle OAuth callback
       const code = searchParams.get('code');
       const state = searchParams.get('state');
-      const error = searchParams.get('error');
-      
-      if (error) {
-        console.error('OAuth error:', error);
-        return NextResponse.redirect('/dashboard/generator?error=oauth_denied');
-      }
       
       if (!code || !state) {
-        return NextResponse.redirect('/dashboard/generator?error=missing_params');
+        return NextResponse.json(
+          { error: 'Missing code or state parameter' },
+          { status: 400 }
+        );
       }
       
-      // Verify state (in production, check against stored state)
+      // Verify state (in production, compare with stored state)
       const storedState = req.cookies.get('oauth_state')?.value;
       if (state !== storedState) {
-        return NextResponse.redirect('/dashboard/generator?error=invalid_state');
+        return NextResponse.json(
+          { error: 'Invalid state parameter' },
+          { status: 400 }
+        );
       }
       
       // Exchange code for tokens
       const userId = 'default_user'; // In production, get from session
-      const tokens = await oauthService.getTokens(code);
-      await oauthService.storeTokens(userId, tokens);
+      const tokens = await oauthService.handleCallback(code, userId);
+      
+      if (!tokens) {
+        return NextResponse.json(
+          { error: 'Failed to exchange authorization code' },
+          { status: 500 }
+        );
+      }
       
       // Clear state cookie
-      const response = NextResponse.redirect('/dashboard/generator?success=gmail_connected');
+      const response = NextResponse.redirect('/dashboard?connected=true');
       response.cookies.delete('oauth_state');
       
       return response;
@@ -67,6 +73,9 @@ export async function GET(req: NextRequest) {
     }
   } catch (error) {
     console.error('OAuth error:', error);
-    return NextResponse.redirect('/dashboard/generator?error=oauth_failed');
+    return NextResponse.json(
+      { error: 'OAuth process failed' },
+      { status: 500 }
+    );
   }
 }

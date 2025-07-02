@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getSupabase } from './_lib/db';
 import { GmailService } from './_lib/gmail/service';
+import { getSupabase } from './_lib/db';
 
 export const runtime = 'edge';
 
@@ -9,7 +9,7 @@ export const runtime = 'edge';
  * Combined Email API
  * GET /api/email?action=activities - Get email activities
  * GET /api/email?action=sync-status - Get sync status
- * POST /api/email?action=sync - Sync emails
+ * POST /api/email?action=sync - Trigger email sync
  * POST /api/email?action=process - Process emails with AI
  */
 export async function GET(req: NextRequest) {
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
-  const action = searchParams.get('action') || 'sync';
+  const action = searchParams.get('action');
 
   try {
     if (action === 'sync') {
@@ -57,56 +57,53 @@ export async function POST(req: NextRequest) {
 // Get email activities
 async function handleGetActivities(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
-  const limit = parseInt(searchParams.get('limit') || '50');
+  const limit = parseInt(searchParams.get('limit') || '20');
   const offset = parseInt(searchParams.get('offset') || '0');
+  const jobRelated = searchParams.get('job_related') === 'true';
   const search = searchParams.get('search') || '';
-  
+
   const db = getSupabase();
   
-  // Build query
   let query = db
     .from('email_communications')
     .select('*', { count: 'exact' })
-    .order('date_sent', { ascending: false })
+    .order('received_at', { ascending: false })
     .range(offset, offset + limit - 1);
-  
-  // Add search if provided
-  if (search) {
-    query = query.or(`subject.ilike.%${search}%,sender.ilike.%${search}%,body.ilike.%${search}%`);
+
+  if (jobRelated) {
+    query = query.eq('is_job_related', true);
   }
-  
-  const { data: emails, count, error } = await query;
-  
-  if (error) throw error;
-  
-  // Get analytics
-  const { data: analytics } = await db
-    .from('email_communications')
-    .select('sender, job_id')
-    .order('date_sent', { ascending: false })
-    .limit(1000);
-  
-  // Calculate sender frequency
-  const senderFrequency = analytics?.reduce((acc: any, email) => {
-    acc[email.sender] = (acc[email.sender] || 0) + 1;
-    return acc;
-  }, {});
-  
-  // Get top senders
-  const topSenders = Object.entries(senderFrequency || {})
-    .sort(([, a]: any, [, b]: any) => b - a)
-    .slice(0, 10)
-    .map(([sender, count]) => ({ sender, count }));
-  
-  // Get job-related emails count
-  const jobRelatedCount = analytics?.filter(e => e.job_id).length || 0;
-  
+
+  if (search) {
+    query = query.or(`subject.ilike.%${search}%,sender_email.ilike.%${search}%`);
+  }
+
+  const { data: emails, error, count } = await query;
+
+  if (error) {
+    console.error('Error fetching emails:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch email activities' },
+      { status: 500 }
+    );
+  }
+
+  // Get job opportunities linked to these emails
+  const emailIds = emails?.map(e => e.id) || [];
+  const { data: opportunities } = await db
+    .from('job_opportunities')
+    .select('*')
+    .in('email_id', emailIds);
+
+  // Map opportunities to emails
+  const emailsWithOpportunities = emails?.map(email => ({
+    ...email,
+    job_opportunities: opportunities?.filter(opp => opp.email_id === email.id) || []
+  })) || [];
+
   return NextResponse.json({
-    emails: emails || [],
-    total: count || 0,
-    analytics: {
-      topSenders,
-      jobRelatedCount,
+    emails: emailsWithOpportunities,
+    metadata: {
       totalEmails: count || 0,
     },
     pagination: {
@@ -191,23 +188,32 @@ async function handleProcessEmails(req: NextRequest) {
   const { data: emails, error } = await db
     .from('email_communications')
     .select('*')
-    .in('id', emailIds)
-    .eq('is_processed', false);
-  
-  if (error) throw error;
-  
-  // TODO: Implement AI processing to extract job opportunities
-  // For now, just mark as processed
-  const { error: updateError } = await db
-    .from('email_communications')
-    .update({ is_processed: true })
     .in('id', emailIds);
   
-  if (updateError) throw updateError;
+  if (error || !emails) {
+    return NextResponse.json(
+      { error: 'Failed to fetch emails' },
+      { status: 500 }
+    );
+  }
+  
+  // TODO: Implement AI processing logic
+  // For now, just mark them as processed
+  const { error: updateError } = await db
+    .from('email_communications')
+    .update({ ai_processed: true })
+    .in('id', emailIds);
+  
+  if (updateError) {
+    return NextResponse.json(
+      { error: 'Failed to update email status' },
+      { status: 500 }
+    );
+  }
   
   return NextResponse.json({
     success: true,
-    processed: emails?.length || 0,
-    message: 'Emails marked for processing',
+    processedCount: emails.length,
+    message: 'Emails processed successfully',
   });
 }

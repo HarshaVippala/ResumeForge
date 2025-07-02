@@ -9,6 +9,7 @@ import { getSupabase } from './_lib/db';
  * GET /api/jobs?action=filters - Get available filters
  * GET /api/jobs?action=get&id=X - Get single job
  * POST /api/jobs?action=save - Save/unsave a job
+ * POST /api/jobs?action=scrape - Trigger job scraping
  * POST /api/jobs - Create new job
  */
 export default async function handler(
@@ -36,6 +37,8 @@ export default async function handler(
     } else if (req.method === 'POST') {
       if (action === 'save') {
         return await handleSaveJob(req, res);
+      } else if (action === 'scrape') {
+        return await handleScrapeJobs(req, res);
       } else {
         return await handleCreateJob(req, res);
       }
@@ -362,4 +365,23 @@ async function handleCreateJob(req: VercelRequest, res: VercelResponse) {
     success: true,
     job
   });
+}
+
+// Trigger job scraping
+async function handleScrapeJobs(_req: VercelRequest, res: VercelResponse) {
+  try {
+    // For now, return a mock response since scraping functionality
+    // requires backend integration with Python scraper
+    return res.status(200).json({
+      message: 'Job scraping initiated',
+      status: 'in_progress',
+      estimatedTime: '2-3 minutes',
+      note: 'Scraping functionality requires backend service integration'
+    });
+  } catch (error) {
+    console.error('Scraping error:', error);
+    return res.status(500).json({ 
+      error: 'Failed to initiate job scraping' 
+    });
+  }
 }

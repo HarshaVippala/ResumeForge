@@ -9,7 +9,8 @@ export const runtime = 'edge';
  */
 export async function POST(req: NextRequest) {
   try {
-    const { to, subject, body, userId = 'default_user' } = await req.json();
+    const requestBody = await req.json() as { to?: string; subject?: string; body?: string; userId?: string };
+    const { to, subject, body, userId = 'default_user' } = requestBody;
     
     // Validate inputs
     if (!to || !subject || !body) {

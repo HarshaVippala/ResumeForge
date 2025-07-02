@@ -6,7 +6,7 @@ export const runtime = 'edge';
 /**
  * List available LLM providers
  */
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     // Return currently configured provider
     const providers = [
