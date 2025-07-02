@@ -37,7 +37,7 @@ export async function authenticateWithPasskey(): Promise<boolean> {
     let attResp: AuthenticationResponseJSON
     try {
       console.log('🔑 Prompting for passkey...')
-      attResp = await startAuthentication({ optionsJSON: options })
+      attResp = await startAuthentication(options)
       console.log('✅ Passkey authentication successful')
     } catch (error: any) {
       console.error('❌ Passkey prompt error:', error)

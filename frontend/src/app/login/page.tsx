@@ -13,7 +13,7 @@ export default function LoginPage() {
   const [mounted, setMounted] = useState(false)
   const [isAuthenticating, setIsAuthenticating] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [currentTime, setCurrentTime] = useState(new Date())
+  const [currentTime, setCurrentTime] = useState<Date | null>(null)
   const [isHovering, setIsHovering] = useState(false)
   const [showGreeting, setShowGreeting] = useState(false)
   const [windowSize, setWindowSize] = useState({ width: 1920, height: 1080 })
@@ -35,6 +35,7 @@ export default function LoginPage() {
     }
     
     window.addEventListener('resize', handleResize)
+    setCurrentTime(new Date())
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
     
     return () => {
@@ -58,6 +59,7 @@ export default function LoginPage() {
   }, [mouseX, mouseY])
 
   const getTimeBasedGreeting = () => {
+    if (!currentTime) return 'Welcome'
     const hour = currentTime.getHours()
     if (hour >= 5 && hour < 12) return 'Good morning'
     if (hour >= 12 && hour < 17) return 'Good afternoon'
@@ -66,6 +68,7 @@ export default function LoginPage() {
   }
 
   const getTimeBasedEmoji = () => {
+    if (!currentTime) return '👋'
     const hour = currentTime.getHours()
     if (hour >= 5 && hour < 12) return '☀️'
     if (hour >= 12 && hour < 17) return '🌤️'
