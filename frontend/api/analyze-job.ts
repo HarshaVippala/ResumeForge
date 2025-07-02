@@ -1,6 +1,9 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { AIService } from './_lib/ai';
 import { getSupabase } from './_lib/db';
+import { withAuthNode } from './_lib/auth/middleware';
+import { validateJobAnalysisInputs, createValidationErrorResponse } from './_lib/validation/input-limits';
+import { shouldReturnFullData } from './_lib/security/response-sanitizer';
 
 /**
  * Analyze job description and extract categorized keywords
@@ -13,7 +16,7 @@ import { getSupabase } from './_lib/db';
  *   "jobDescription": "..."
  * }
  */
-export default async function handler(
+async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
@@ -30,6 +33,12 @@ export default async function handler(
       return res.status(400).json({ 
         error: 'Missing required fields: company, role, jobDescription' 
       });
+    }
+
+    // Validate input sizes to prevent AI cost overruns
+    const validation = validateJobAnalysisInputs(jobDescription, company, role);
+    if (!validation.isValid) {
+      return createValidationErrorResponse(validation.errors);
     }
 
     console.log(`Analyzing job: ${company} - ${role}`);
@@ -62,11 +71,25 @@ export default async function handler(
       // Continue without saving - personal use, not critical
     }
 
-    return res.status(200).json({
+    // Check if full data is requested
+    const returnFullData = shouldReturnFullData(req);
+    
+    // For analysis endpoint, we might want to return full analysis by default
+    // since it's needed for the resume tailoring process
+    // But we can still sanitize if needed
+    const responseData = {
       success: true,
       session_id: session?.id || null,
-      analysis
-    });
+      analysis: returnFullData ? analysis : {
+        // Return summarized version of analysis
+        technical_requirements: analysis.technical_requirements?.slice(0, 5),
+        soft_skills: analysis.soft_skills?.slice(0, 3),
+        core_responsibilities: analysis.core_responsibilities?.slice(0, 3),
+        summary: 'Analysis complete - use full=true for complete data'
+      }
+    };
+
+    return res.status(200).json(responseData);
 
   } catch (error) {
     console.error('Error in analyze-job:', error);
@@ -75,3 +98,5 @@ export default async function handler(
     });
   }
 }
+
+export default withAuthNode(handler);

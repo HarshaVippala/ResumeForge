@@ -1,6 +1,12 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getSupabase } from './_lib/db';
+import { withAuthEdge } from './_lib/auth/middleware';
+import { 
+  sanitizeApplicationResponse, 
+  sanitizeBulkResponse,
+  shouldReturnFullData 
+} from './_lib/security/response-sanitizer';
 
 export const runtime = 'edge';
 
@@ -11,7 +17,7 @@ export const runtime = 'edge';
  */
 
 // GET: List all job applications
-export async function GET() {
+async function handleGET(req: NextRequest) {
   try {
     const db = getSupabase();
     
@@ -33,7 +39,15 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json({ applications: applications || [] });
+    // Check if full data is requested
+    const returnFullData = shouldReturnFullData(req);
+    
+    // Sanitize responses unless full data is requested
+    const responseApplications = returnFullData 
+      ? applications || []
+      : sanitizeBulkResponse(applications || [], sanitizeApplicationResponse);
+
+    return NextResponse.json({ applications: responseApplications });
   } catch (error) {
     console.error('Applications API error:', error);
     return NextResponse.json(
@@ -44,7 +58,7 @@ export async function GET() {
 }
 
 // POST: Create new job application
-export async function POST(req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
     const body = await req.json() as { jobId?: string; status?: string };
     const { jobId, status = 'planned' } = body;
@@ -91,7 +105,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ application }, { status: 201 });
+    // Check if full data is requested
+    const returnFullData = shouldReturnFullData(req);
+    
+    // Sanitize response unless full data is requested
+    const responseApplication = returnFullData 
+      ? application
+      : sanitizeApplicationResponse(application);
+
+    return NextResponse.json({ application: responseApplication }, { status: 201 });
   } catch (error) {
     console.error('Create application error:', error);
     return NextResponse.json(
@@ -102,7 +124,7 @@ export async function POST(req: NextRequest) {
 }
 
 // PUT: Update job application
-export async function PUT(req: NextRequest) {
+async function handlePUT(req: NextRequest) {
   try {
     const body = await req.json() as { id?: string; [key: string]: any };
     const { id, ...updates } = body;
@@ -131,7 +153,15 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ application });
+    // Check if full data is requested
+    const returnFullData = shouldReturnFullData(req);
+    
+    // Sanitize response unless full data is requested
+    const responseApplication = returnFullData 
+      ? application
+      : sanitizeApplicationResponse(application);
+
+    return NextResponse.json({ application: responseApplication });
   } catch (error) {
     console.error('Update application error:', error);
     return NextResponse.json(
@@ -140,3 +170,8 @@ export async function PUT(req: NextRequest) {
     );
   }
 }
+
+// Export with authentication
+export const GET = withAuthEdge(handleGET);
+export const POST = withAuthEdge(handlePOST);
+export const PUT = withAuthEdge(handlePUT);

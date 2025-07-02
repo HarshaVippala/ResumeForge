@@ -1,4 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { validateStringLength } from './_lib/validation/input-limits';
 
 /**
  * Parse LinkedIn job URL and extract job information
@@ -29,6 +30,12 @@ export default async function handler(
       return res.status(400).json({ 
         error: 'Missing required field: jobUrl' 
       });
+    }
+
+    // Validate URL length to prevent abuse
+    const urlValidation = validateStringLength(jobUrl, 500, 'Job URL');
+    if (!urlValidation.isValid) {
+      return res.status(400).json({ error: urlValidation.error });
     }
 
     // Validate LinkedIn URL format

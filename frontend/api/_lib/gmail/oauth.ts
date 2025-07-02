@@ -36,8 +36,11 @@ export class GmailOAuthService {
     );
 
     // Initialize encryption key for token storage
-    const key = process.env.GMAIL_TOKEN_ENCRYPTION_KEY || process.env.SUPABASE_SERVICE_KEY;
-    this.encryptionKey = crypto.createHash('sha256').update(key!).digest();
+    const key = process.env.GMAIL_TOKEN_ENCRYPTION_KEY || process.env.SUPABASE_SERVICE_KEY || 'fallback-dev-key-32-chars-long!!';
+    if (!key) {
+      throw new Error('GMAIL_TOKEN_ENCRYPTION_KEY or SUPABASE_SERVICE_KEY must be set');
+    }
+    this.encryptionKey = crypto.createHash('sha256').update(key).digest();
   }
 
   /**

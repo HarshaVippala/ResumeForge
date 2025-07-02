@@ -280,7 +280,7 @@ Return a JSON object with this structure:
     // This is a simplified version - in production, load from database
     return {
       name: process.env.USER_NAME || 'Your Name',
-      email: process.env.USER_EMAIL || 'email@example.com',
+      email: process.env.USER_EMAIL || 'your.email@example.com',
       summary: 'Experienced software engineer with expertise in full-stack development',
       experience: [
         {

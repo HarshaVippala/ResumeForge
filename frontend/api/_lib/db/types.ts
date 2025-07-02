@@ -311,6 +311,31 @@ export interface Database {
           job_id?: string;
         };
       };
+      user_credentials: {
+        Row: {
+          id: string;
+          credential_id: string;
+          public_key: string;
+          counter: number;
+          device_name: string;
+          created_at: string;
+          last_used?: string;
+        };
+        Insert: {
+          id?: string;
+          credential_id: string;
+          public_key: string;
+          counter: number;
+          device_name: string;
+          created_at?: string;
+          last_used?: string;
+        };
+        Update: {
+          counter?: number;
+          device_name?: string;
+          last_used?: string;
+        };
+      };
     };
     Views: {};
     Functions: {

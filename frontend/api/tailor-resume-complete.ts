@@ -1,5 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { AIService } from './_lib/ai';
+import { withAuthNode } from './_lib/auth/middleware';
+import { validateJobAnalysisInputs, validateResumeContent, createValidationErrorResponse } from './_lib/validation/input-limits';
 
 /**
  * Complete resume tailoring for personal use
@@ -9,12 +11,13 @@ import { AIService } from './_lib/ai';
  * {
  *   "company": "Google",
  *   "role": "Senior Software Engineer",
- *   "jobDescription": "..."
+ *   "jobDescription": "...",
+ *   "resumeContent": "..." (optional)
  * }
  * 
  * Returns complete tailored resume with insights
  */
-export default async function handler(
+async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
@@ -24,13 +27,27 @@ export default async function handler(
   }
 
   try {
-    const { company, role, jobDescription } = req.body;
+    const { company, role, jobDescription, resumeContent } = req.body;
 
     // Validate input
     if (!company?.trim() || !role?.trim() || !jobDescription?.trim()) {
       return res.status(400).json({ 
         error: 'Missing required fields: company, role, jobDescription' 
       });
+    }
+
+    // Validate input sizes to prevent AI cost overruns
+    const jobValidation = validateJobAnalysisInputs(jobDescription, company, role);
+    if (!jobValidation.isValid) {
+      return createValidationErrorResponse(jobValidation.errors);
+    }
+
+    // If resume content is provided, validate it too
+    if (resumeContent) {
+      const resumeValidation = validateResumeContent(resumeContent);
+      if (!resumeValidation.isValid && resumeValidation.error) {
+        return createValidationErrorResponse([resumeValidation.error]);
+      }
     }
 
     console.log(`Tailoring complete resume for: ${company} - ${role}`);
@@ -117,3 +134,5 @@ function extractFocusAreas(resume: any): string[] {
   
   return areas;
 }
+
+export default withAuthNode(handler);

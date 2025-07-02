@@ -1,6 +1,13 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { GmailService } from './_lib/gmail/service';
 import { getSupabase } from './_lib/db';
+import { withAuthNode } from './_lib/auth/middleware';
+import { 
+  sanitizeEmailResponse, 
+  sanitizeBulkResponse,
+  shouldReturnFullData 
+} from './_lib/security/response-sanitizer';
+import { validateEmailContent, INPUT_LIMITS } from './_lib/validation/input-limits';
 
 /**
  * Combined Email API
@@ -10,7 +17,7 @@ import { getSupabase } from './_lib/db';
  * POST /api/email?action=sync - Trigger email sync
  * POST /api/email?action=process - Process emails with AI
  */
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+async function handler(req: VercelRequest, res: VercelResponse) {
   const { method, query } = req;
   const action = query.action as string || 'activities';
 
@@ -101,8 +108,16 @@ async function handleGetActivities(req: VercelRequest, res: VercelResponse) {
       job_opportunities: opportunities?.filter(opp => opp.email_id === email.id) || []
     })) || [];
 
+    // Check if full data is requested
+    const returnFullData = shouldReturnFullData(req);
+    
+    // Sanitize responses unless full data is requested
+    const responseEmails = returnFullData 
+      ? emailsWithOpportunities
+      : sanitizeBulkResponse(emailsWithOpportunities, sanitizeEmailResponse);
+
     return res.status(200).json({
-      emails: emailsWithOpportunities,
+      emails: responseEmails,
       metadata: {
         totalEmails: count || 0,
       },
@@ -124,7 +139,7 @@ async function handleGetActivities(req: VercelRequest, res: VercelResponse) {
  * Get sync status
  */
 async function handleGetSyncStatus(res: VercelResponse) {
-  const userId = 'default_user';
+  const userId = process.env.USER_ID || 'personal-user';
   const db = getSupabase();
   
   try {
@@ -159,7 +174,7 @@ async function handleGetSyncStatus(res: VercelResponse) {
  */
 async function handleSync(req: VercelRequest, res: VercelResponse) {
   try {
-    const { userId = 'default_user', syncType = 'incremental' } = req.body || {};
+    const { userId = process.env.USER_ID || 'personal-user', syncType = 'incremental' } = req.body || {};
     const gmailService = new GmailService();
     
     if (syncType === 'initial') {
@@ -229,6 +244,19 @@ async function handleProcessEmails(req: VercelRequest, res: VercelResponse) {
       });
     }
     
+    // Validate email content sizes before AI processing
+    const oversizedEmails = emails?.filter(email => {
+      const contentLength = (email.subject || '').length + (email.body_text || '').length;
+      return contentLength > INPUT_LIMITS.MAX_EMAIL_CONTENT_LENGTH;
+    }) || [];
+    
+    if (oversizedEmails.length > 0) {
+      return res.status(400).json({
+        error: `${oversizedEmails.length} email(s) exceed the maximum content length of ${INPUT_LIMITS.MAX_EMAIL_CONTENT_LENGTH.toLocaleString()} characters. These emails cannot be processed to prevent excessive AI costs.`,
+        oversizedEmailIds: oversizedEmails.map(e => e.id)
+      });
+    }
+    
     // TODO: Implement AI processing to extract job opportunities
     // For now, mark as processed
     const { error: updateError } = await db
@@ -295,9 +323,17 @@ async function handleGetThreadEmails(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    // Check if full data is requested
+    const returnFullData = shouldReturnFullData(req);
+    
+    // Sanitize responses unless full data is requested
+    const responseEmails = returnFullData 
+      ? emails || []
+      : sanitizeBulkResponse(emails || [], sanitizeEmailResponse);
+
     return res.status(200).json({
       success: true,
-      data: emails || []
+      data: responseEmails
     });
   } catch (error) {
     console.error('Thread emails handler error:', error);
@@ -306,3 +342,5 @@ async function handleGetThreadEmails(req: VercelRequest, res: VercelResponse) {
     });
   }
 }
+
+export default withAuthNode(handler);

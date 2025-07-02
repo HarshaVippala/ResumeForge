@@ -5,8 +5,14 @@
   "installCommand": "cd frontend && npm install",
   "devCommand": "cd frontend && npm run dev",
   "functions": {
-    "api/*.ts": {
+    "frontend/api/*.ts": {
       "maxDuration": 10
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/frontend/api/:path*"
+    }
+  ]
 }

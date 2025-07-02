@@ -1,5 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { withAuthEdge } from './_lib/auth/middleware';
+import { validateStringLength, INPUT_LIMITS } from './_lib/validation/input-limits';
 
 export const runtime = 'edge';
 
@@ -7,8 +9,40 @@ export const runtime = 'edge';
  * Generate individual resume section
  * TODO: Implement this endpoint
  */
-export async function POST(_req: NextRequest) {
+async function handlePOST(req: NextRequest) {
   try {
+    const body = await req.json();
+    
+    // When implementing, validate any text inputs
+    // Example validation for common fields:
+    if (body.content) {
+      const contentValidation = validateStringLength(
+        body.content,
+        INPUT_LIMITS.MAX_RESUME_CONTENT_LENGTH,
+        'Section content'
+      );
+      if (!contentValidation.isValid) {
+        return NextResponse.json(
+          { error: contentValidation.error },
+          { status: 400 }
+        );
+      }
+    }
+    
+    if (body.jobDescription) {
+      const jobValidation = validateStringLength(
+        body.jobDescription,
+        INPUT_LIMITS.MAX_JOB_DESCRIPTION_LENGTH,
+        'Job description'
+      );
+      if (!jobValidation.isValid) {
+        return NextResponse.json(
+          { error: jobValidation.error },
+          { status: 400 }
+        );
+      }
+    }
+    
     // Return 501 Not Implemented for now
     return NextResponse.json(
       { 
@@ -25,3 +59,5 @@ export async function POST(_req: NextRequest) {
     );
   }
 }
+
+export const POST = withAuthEdge(handlePOST);

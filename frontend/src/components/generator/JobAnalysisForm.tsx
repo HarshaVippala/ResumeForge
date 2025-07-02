@@ -34,7 +34,7 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
   })
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [error, setError] = useState('')
-  const [selectedProvider, setSelectedProvider] = useState('openai') // Default to openai since it's working
+  const [selectedProvider, setSelectedProvider] = useState('gemini') // Default to gemini
   const [providers, setProviders] = useState<LlmProvider[]>([])
   const [loadingProviders, setLoadingProviders] = useState(true)
 
@@ -47,7 +47,7 @@ export function JobAnalysisForm({ onComplete }: JobAnalysisFormProps) {
         
         if (data.success) {
           setProviders(data.providers)
-          setSelectedProvider(data.current_provider || 'lmstudio')
+          setSelectedProvider(data.current_provider || 'gemini')
         }
       } catch (err) {
         console.error('Failed to load LLM providers:', err)

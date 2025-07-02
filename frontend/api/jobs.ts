@@ -1,5 +1,12 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabase } from './_lib/db';
+import { withAuthNode } from './_lib/auth/middleware';
+import { 
+  sanitizeJobResponse, 
+  sanitizeBulkResponse,
+  shouldReturnFullData 
+} from './_lib/security/response-sanitizer';
+import { validateStringLength, INPUT_LIMITS } from './_lib/validation/input-limits';
 
 /**
  * Combined Jobs API - Handles all job-related operations
@@ -12,7 +19,7 @@ import { getSupabase } from './_lib/db';
  * POST /api/jobs?action=scrape - Trigger job scraping
  * POST /api/jobs - Create new job
  */
-export default async function handler(
+async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
@@ -150,9 +157,17 @@ async function handleGetJobs(req: VercelRequest, res: VercelResponse) {
 
   const totalPages = Math.ceil((count || 0) / limitNum);
 
+  // Check if full data is requested
+  const returnFullData = shouldReturnFullData(req);
+  
+  // Sanitize responses unless full data is requested
+  const responseJobs = returnFullData 
+    ? jobs || []
+    : sanitizeBulkResponse(jobs || [], sanitizeJobResponse);
+
   return res.status(200).json({
     success: true,
-    jobs: jobs || [],
+    jobs: responseJobs,
     pagination: {
       current_page: pageNum,
       total_pages: totalPages,
@@ -185,9 +200,17 @@ async function handleGetSavedJobs(req: VercelRequest, res: VercelResponse) {
 
   const totalPages = Math.ceil((count || 0) / limitNum);
 
+  // Check if full data is requested
+  const returnFullData = shouldReturnFullData(req);
+  
+  // Sanitize responses unless full data is requested
+  const responseJobs = returnFullData 
+    ? jobs || []
+    : sanitizeBulkResponse(jobs || [], sanitizeJobResponse);
+
   return res.status(200).json({
     success: true,
-    jobs: jobs || [],
+    jobs: responseJobs,
     pagination: {
       current_page: pageNum,
       total_pages: totalPages,
@@ -300,9 +323,17 @@ async function handleGetJob(_req: VercelRequest, res: VercelResponse, id: string
     throw error;
   }
 
+  // Check if full data is requested
+  const returnFullData = shouldReturnFullData(_req);
+  
+  // Sanitize response unless full data is requested
+  const responseJob = returnFullData 
+    ? job
+    : sanitizeJobResponse(job);
+
   return res.status(200).json({
     success: true,
-    job
+    job: responseJob
   });
 }
 
@@ -333,9 +364,17 @@ async function handleSaveJob(req: VercelRequest, res: VercelResponse) {
     throw error;
   }
 
+  // Check if full data is requested
+  const returnFullData = shouldReturnFullData(req);
+  
+  // Sanitize response unless full data is requested
+  const responseJob = returnFullData 
+    ? job
+    : sanitizeJobResponse(job);
+
   return res.status(200).json({
     success: true,
-    job,
+    job: responseJob,
     message: saved ? 'Job saved successfully' : 'Job unsaved successfully'
   });
 }
@@ -346,6 +385,48 @@ async function handleCreateJob(req: VercelRequest, res: VercelResponse) {
 
   if (!jobData.title || !jobData.company) {
     return res.status(400).json({ error: 'Missing required fields: title, company' });
+  }
+
+  // Validate input sizes to prevent AI cost overruns
+  const validationErrors: string[] = [];
+  
+  // Validate job description if provided
+  if (jobData.description) {
+    const descValidation = validateStringLength(
+      jobData.description,
+      INPUT_LIMITS.MAX_JOB_DESCRIPTION_LENGTH,
+      'Job description'
+    );
+    if (!descValidation.isValid && descValidation.error) {
+      validationErrors.push(descValidation.error);
+    }
+  }
+  
+  // Validate company name
+  const companyValidation = validateStringLength(
+    jobData.company,
+    INPUT_LIMITS.MAX_COMPANY_NAME_LENGTH,
+    'Company name'
+  );
+  if (!companyValidation.isValid && companyValidation.error) {
+    validationErrors.push(companyValidation.error);
+  }
+  
+  // Validate job title
+  const titleValidation = validateStringLength(
+    jobData.title,
+    INPUT_LIMITS.MAX_ROLE_TITLE_LENGTH,
+    'Job title'
+  );
+  if (!titleValidation.isValid && titleValidation.error) {
+    validationErrors.push(titleValidation.error);
+  }
+  
+  if (validationErrors.length > 0) {
+    return res.status(400).json({ 
+      error: 'Validation Error',
+      details: validationErrors 
+    });
   }
 
   const supabase = getSupabase();
@@ -361,9 +442,17 @@ async function handleCreateJob(req: VercelRequest, res: VercelResponse) {
 
   if (error) throw error;
 
+  // Check if full data is requested
+  const returnFullData = shouldReturnFullData(req);
+  
+  // Sanitize response unless full data is requested
+  const responseJob = returnFullData 
+    ? job
+    : sanitizeJobResponse(job);
+
   return res.status(201).json({
     success: true,
-    job
+    job: responseJob
   });
 }
 
@@ -385,3 +474,5 @@ async function handleScrapeJobs(_req: VercelRequest, res: VercelResponse) {
     });
   }
 }
+
+export default withAuthNode(handler);

@@ -55,6 +55,11 @@ export const apiConfig = {
     emailSyncStatus: '/api/email?action=sync-status',
     emailProcess: '/api/email?action=process',
     
+    // OAuth endpoints
+    oauthAuthorize: '/api/oauth/authorize',
+    oauthCallback: '/api/oauth/callback',
+    oauthDisconnect: '/api/oauth/disconnect',
+    oauthStatus: '/api/oauth/status',
     
     // Job Applications
     applications: '/api/applications',
@@ -78,10 +83,11 @@ export function getDefaultHeaders(includeAuth: boolean = true): HeadersInit {
     'Content-Type': 'application/json',
   }
   
-  // Add API key for simple authentication (personal use)
-  const apiKey = process.env.NEXT_PUBLIC_API_KEY
-  if (apiKey && process.env.NEXT_PUBLIC_ENVIRONMENT === 'production') {
-    headers['X-API-Key'] = apiKey
+  // Add API key header for personal authentication
+  // This will be sent with every API request from the frontend
+  const apiKey = process.env.NEXT_PUBLIC_PERSONAL_API_KEY
+  if (apiKey) {
+    headers['x-api-key'] = apiKey
   }
   
   // Add authentication headers if enabled and available

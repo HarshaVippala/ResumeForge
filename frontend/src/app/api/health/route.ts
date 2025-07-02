@@ -70,7 +70,8 @@ async function checkOpenAIConnection(): Promise<string> {
  */
 async function checkDatabaseConnection(): Promise<string> {
   try {
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || 
+        (!process.env.SUPABASE_SERVICE_KEY && !process.env.SUPABASE_SERVICE_ROLE_KEY)) {
       return 'not_configured';
     }
     

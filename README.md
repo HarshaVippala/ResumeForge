@@ -1,6 +1,6 @@
 # Resume Builder v2
 
-A personal AI-powered resume builder that creates tailored resumes for specific job applications using OpenAI and modern web technologies.
+A personal AI-powered resume builder that creates tailored resumes for specific job applications using Google Gemini AI and modern web technologies.
 
 ## 🚀 What it does
 
@@ -30,7 +30,7 @@ A personal AI-powered resume builder that creates tailored resumes for specific 
 ### Technology Stack
 - **Frontend**: Next.js 15, TypeScript, Tailwind CSS, Zustand
 - **API**: TypeScript, Vercel Functions
-- **AI**: OpenAI GPT-4
+- **AI**: Google Gemini 1.5
 - **Database**: PostgreSQL (Supabase)
 - **Deployment**: Vercel (unified frontend + API)
 
