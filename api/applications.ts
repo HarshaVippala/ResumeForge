@@ -19,16 +19,18 @@ export async function GET() {
       .from('job_applications')
       .select(`
         *,
-        saved_jobs (
+        jobs (
           id,
-          job_title,
+          title,
           company,
           location,
-          salary_range,
-          job_url
+          salary_min,
+          salary_max,
+          application_url
         )
       `)
-      .order('created_at', { ascending: false });
+      .eq('user_email', 'default_user@example.com') // Filter for personal use
+      .order('applied_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching applications:', error);
@@ -67,7 +69,7 @@ export async function POST(req: NextRequest) {
     const { data: existing } = await db
       .from('job_applications')
       .select('id')
-      .eq('saved_job_id', jobId)
+      .eq('job_id', jobId)
       .single();
 
     if (existing) {
@@ -81,9 +83,10 @@ export async function POST(req: NextRequest) {
     const { data: application, error } = await db
       .from('job_applications')
       .insert({
-        saved_job_id: jobId,
+        job_id: jobId,
+        user_email: 'default_user@example.com', // For personal use
         status,
-        applied_date: status === 'applied' ? new Date().toISOString() : null
+        applied_at: status === 'applied' ? new Date().toISOString() : null
       })
       .select()
       .single();

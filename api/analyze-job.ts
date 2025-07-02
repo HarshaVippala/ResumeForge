@@ -47,12 +47,12 @@ export default async function handler(
     // Save to database
     const supabase = getSupabase();
     const { data: session, error: dbError } = await supabase
-      .from('sessions')
+      .from('resume_sessions')
       .insert({
         company,
         role,
         job_description: jobDescription,
-        analysis_data: analysis
+        analysis_data: JSON.stringify(analysis) // Convert to string for TEXT column
       })
       .select('id')
       .single();

@@ -78,16 +78,16 @@ async function handleGetActivities(req: NextRequest) {
   let query = db
     .from('email_communications')
     .select('*', { count: 'exact' })
-    .order('date_sent', { ascending: false })
+    .order('email_date', { ascending: false })
     .range(offset, offset + limit - 1);
 
   // Add filters
   if (jobRelated) {
-    query = query.eq('is_job_related', true);
+    query = query.in('email_type', ['job_opportunity', 'recruiter_contact']);
   }
 
   if (search) {
-    query = query.or(`subject.ilike.%${search}%,sender.ilike.%${search}%,body.ilike.%${search}%`);
+    query = query.or(`subject.ilike.%${search}%,sender.ilike.%${search}%,content.ilike.%${search}%`);
   }
 
   const { data: emails, count, error } = await query;
@@ -103,8 +103,8 @@ async function handleGetActivities(req: NextRequest) {
   // Get analytics data
   const { data: analyticsData } = await db
     .from('email_communications')
-    .select('sender, job_id, is_job_related')
-    .order('date_sent', { ascending: false })
+    .select('sender, email_type, processing_status')
+    .order('email_date', { ascending: false })
     .limit(1000);
 
   // Calculate sender frequency
@@ -120,20 +120,11 @@ async function handleGetActivities(req: NextRequest) {
     .map(([sender, count]) => ({ sender, count }));
 
   // Get job-related stats
-  const jobRelatedCount = analyticsData?.filter(e => e.job_id || e.is_job_related).length || 0;
+  const jobRelatedCount = analyticsData?.filter(e => e.email_type === 'job_opportunity' || e.email_type === 'recruiter_contact').length || 0;
 
-  // Get job opportunities linked to these emails
-  const emailIds = emails?.map(e => e.id) || [];
-  const { data: opportunities } = await db
-    .from('job_opportunities')
-    .select('*')
-    .in('email_id', emailIds);
-
-  // Map opportunities to emails
-  const emailsWithOpportunities = emails?.map(email => ({
-    ...email,
-    job_opportunities: opportunities?.filter(opp => opp.email_id === email.id) || []
-  })) || [];
+  // Return emails without job opportunities for now
+  // The job_opportunities table doesn't have email_id column
+  const emailsWithOpportunities = emails || [];
 
   return NextResponse.json({
     emails: emailsWithOpportunities,
