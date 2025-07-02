@@ -1,1 +1,0 @@
-- This is a personal use application, not intended for shipping to users.
