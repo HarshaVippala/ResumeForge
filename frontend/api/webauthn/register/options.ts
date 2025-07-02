@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateRegistrationOptionsForUser } from '../../_lib/auth/webauthn'
 import { createClient } from '../../_lib/db/client'
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = createClient()
     

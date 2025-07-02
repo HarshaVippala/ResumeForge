@@ -11,7 +11,7 @@ interface VerifyRegistrationBody {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: VerifyRegistrationBody = await request.json()
+    const body = await request.json() as VerifyRegistrationBody
     const { credential: credentialResponse, deviceName = 'Unknown Device' } = body
 
     // Get challenge from cookie
