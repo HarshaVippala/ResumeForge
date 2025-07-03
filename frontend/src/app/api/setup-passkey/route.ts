@@ -8,10 +8,14 @@ export async function GET(request: NextRequest) {
   console.log('🔍 Request URL:', request.url)
   console.log('🔍 Request headers:', Object.fromEntries(request.headers.entries()))
   
-  // Temporary test response
-  return new NextResponse('🔥 ENDPOINT WORKS! This means the function is executing.', {
+  // Temporary test response  
+  console.log('🎯 SETUP FUNCTION IS DEFINITELY EXECUTING')
+  return new NextResponse('🔥 SETUP ENDPOINT WORKS! STATUS 200 SUCCESS!', {
     status: 200,
-    headers: { 'Content-Type': 'text/plain' }
+    headers: { 
+      'Content-Type': 'text/plain',
+      'X-Test-Header': 'SUCCESS-FROM-FUNCTION'
+    }
   })
   
   // Check if setup is enabled
