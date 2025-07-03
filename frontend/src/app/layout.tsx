@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { SessionProvider } from "@/components/providers/SessionProvider";
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 // Google Sans font weights
 // 300: Light - for subtle text
@@ -46,6 +48,8 @@ export default function RootLayout({
             {children}
           </SessionProvider>
         </ThemeProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
