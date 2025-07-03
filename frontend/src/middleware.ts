@@ -3,7 +3,20 @@ import type { NextRequest } from 'next/server'
 import { verifySessionToken, createSessionToken, setAuthCookie } from '@/api/_lib/auth/session'
 
 // Add all routes that should be accessible without authentication
-const publicRoutes = ['/login', '/setup-passkey', '/register-touch-id', '/api/webauthn/register', '/api/webauthn/authenticate', '/api/auth/logout', '/api/manual-login', '/api/add-manual-passkey', '/api/setup-passkey', '/api/webauthn/authenticate/options', '/api/webauthn/authenticate/verify']
+const publicRoutes = [
+  '/login', 
+  '/setup-passkey', 
+  '/register-touch-id', 
+  '/api/webauthn/register', 
+  '/api/webauthn/authenticate', 
+  '/api/auth/logout', 
+  '/api/manual-login', 
+  '/api/add-manual-passkey', 
+  '/api/setup-passkey', 
+  '/api/register-passkey',
+  '/api/webauthn/authenticate/options', 
+  '/api/webauthn/authenticate/verify'
+]
 
 // Session refresh configuration
 const REFRESH_THRESHOLD = 30 * 60 * 1000 // 30 minutes
@@ -14,6 +27,11 @@ export function middleware(request: NextRequest) {
   
   // Check if the route is public
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
+  
+  // Debug logging for setup routes
+  if (pathname.includes('setup-passkey') || pathname.includes('register-passkey')) {
+    console.log(`🔍 Middleware debug: ${pathname}, isPublic: ${isPublicRoute}`)
+  }
   
   // Get the auth token from cookies
   const authToken = request.cookies.get('auth_token')?.value
