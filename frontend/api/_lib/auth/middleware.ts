@@ -81,6 +81,11 @@ function isSameOriginNode(req: VercelRequest): boolean {
  * Authenticate the request (Edge runtime)
  */
 export function authenticateEdge(request: NextRequest): NextResponse | null {
+  // skip auth for setup-passkey
+  if (request.nextUrl.pathname === '/api/setup-passkey') {
+    return null;
+  }
+
   // Allow same-origin requests (browser access)
   if (isSameOriginEdge(request)) {
     return null; // Continue to handler
