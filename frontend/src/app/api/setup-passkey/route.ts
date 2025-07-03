@@ -2,14 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   // Debug logging
-  console.log('🔍 Setup endpoint called')
+  console.log('🚀 SETUP ENDPOINT CALLED - THIS SHOULD SHOW IN LOGS!')
   console.log('🔍 ENABLE_PASSKEY_SETUP:', process.env.ENABLE_PASSKEY_SETUP)
   console.log('🔍 PERSONAL_API_KEY exists:', !!process.env.PERSONAL_API_KEY)
+  console.log('🔍 Request URL:', request.url)
+  console.log('🔍 Request headers:', Object.fromEntries(request.headers.entries()))
+  
+  // Temporary test response
+  return new NextResponse('🔥 ENDPOINT WORKS! This means the function is executing.', {
+    status: 200,
+    headers: { 'Content-Type': 'text/plain' }
+  })
   
   // Check if setup is enabled
   const setupEnabled = process.env.ENABLE_PASSKEY_SETUP === 'true'
   
-  if (!setupEnabled) {
+  // Temporarily always enable for debugging
+  if (false) {
     return new NextResponse(
       `<!DOCTYPE html>
 <html>
