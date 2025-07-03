@@ -5,14 +5,8 @@
   "installCommand": "cd frontend && npm install",
   "devCommand": "cd frontend && npm run dev",
   "functions": {
-    "frontend/api/*.ts": {
+    "frontend/src/app/api/**/*.ts": {
       "maxDuration": 10
     }
-  },
-  "routes": [
-    {
-      "src": "/api/setup-passkey",
-      "middleware": false
-    }
-  ]
+  }
 }
