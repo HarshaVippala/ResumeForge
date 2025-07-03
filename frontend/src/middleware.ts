@@ -36,7 +36,13 @@ export function middleware(request: NextRequest) {
   if (pathname.includes('setup-passkey') || pathname.includes('register-passkey') || pathname.includes('test-auth')) {
     console.log(`🔍 Middleware debug: ${pathname}, isPublic: ${isPublicRoute}`)
     console.log(`🔍 Auth token exists: ${!!authToken}`)
-    console.log(`🔍 Public routes:`, publicRoutes)
+    console.log(`🔍 About to return NextResponse.next()`)
+  }
+  
+  // TEMPORARILY DISABLE ALL REDIRECTS FOR DEBUGGING
+  if (pathname.includes('setup-passkey') || pathname.includes('test-auth') || pathname.includes('register-passkey')) {
+    console.log(`🚀 Bypassing all middleware logic for: ${pathname}`)
+    return NextResponse.next()
   }
   
   // If trying to access protected route without auth, redirect to login
