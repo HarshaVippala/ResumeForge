@@ -210,7 +210,7 @@ export default function LoginPage() {
                       className="mt-6 space-y-1"
                     >
                       <p className="text-sm text-muted">
-                        {currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                        {currentTime ? currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : ''}
                       </p>
                       <p className="text-xs text-muted/70">
                         Personal Job Tracker
