@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
+  // Debug logging
+  console.log('🔍 Setup endpoint called')
+  console.log('🔍 ENABLE_PASSKEY_SETUP:', process.env.ENABLE_PASSKEY_SETUP)
+  console.log('🔍 PERSONAL_API_KEY exists:', !!process.env.PERSONAL_API_KEY)
+  
   // Check if setup is enabled
   const setupEnabled = process.env.ENABLE_PASSKEY_SETUP === 'true'
   
