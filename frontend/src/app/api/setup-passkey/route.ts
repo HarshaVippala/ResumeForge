@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// This endpoint should be publicly accessible without authentication
+export const dynamic = 'force-dynamic'
+export const runtime = 'edge'
+
 export async function GET(request: NextRequest) {
   // Debug logging
   console.log('🚀 SETUP ENDPOINT CALLED - THIS SHOULD SHOW IN LOGS!')
