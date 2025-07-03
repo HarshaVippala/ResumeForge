@@ -15,6 +15,7 @@ const publicRoutes = [
   '/api/setup-passkey', 
   '/api/register-passkey',
   '/api/test-auth',
+  '/api/debug-simple',
   '/api/webauthn/authenticate/options', 
   '/api/webauthn/authenticate/verify'
 ]
@@ -40,7 +41,7 @@ export function middleware(request: NextRequest) {
   }
   
   // TEMPORARILY DISABLE ALL REDIRECTS FOR DEBUGGING
-  if (pathname.includes('setup-passkey') || pathname.includes('test-auth') || pathname.includes('register-passkey')) {
+  if (pathname.includes('setup-passkey') || pathname.includes('test-auth') || pathname.includes('register-passkey') || pathname.includes('debug-simple')) {
     console.log(`🚀 Bypassing all middleware logic for: ${pathname}`)
     return NextResponse.next()
   }
