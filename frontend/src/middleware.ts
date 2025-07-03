@@ -14,6 +14,7 @@ const publicRoutes = [
   '/api/add-manual-passkey', 
   '/api/setup-passkey', 
   '/api/register-passkey',
+  '/api/test-auth',
   '/api/webauthn/authenticate/options', 
   '/api/webauthn/authenticate/verify'
 ]
@@ -28,13 +29,15 @@ export function middleware(request: NextRequest) {
   // Check if the route is public
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
   
-  // Debug logging for setup routes
-  if (pathname.includes('setup-passkey') || pathname.includes('register-passkey')) {
-    console.log(`🔍 Middleware debug: ${pathname}, isPublic: ${isPublicRoute}`)
-  }
-  
   // Get the auth token from cookies
   const authToken = request.cookies.get('auth_token')?.value
+  
+  // Debug logging for setup routes
+  if (pathname.includes('setup-passkey') || pathname.includes('register-passkey') || pathname.includes('test-auth')) {
+    console.log(`🔍 Middleware debug: ${pathname}, isPublic: ${isPublicRoute}`)
+    console.log(`🔍 Auth token exists: ${!!authToken}`)
+    console.log(`🔍 Public routes:`, publicRoutes)
+  }
   
   // If trying to access protected route without auth, redirect to login
   if (!isPublicRoute && !authToken) {
