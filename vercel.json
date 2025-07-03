@@ -8,6 +8,11 @@
     "frontend/api/*.ts": {
       "maxDuration": 10
     }
-  }
-
+  },
+  "routes": [
+    {
+      "src": "/api/setup-passkey",
+      "middleware": false
+    }
+  ]
 }
