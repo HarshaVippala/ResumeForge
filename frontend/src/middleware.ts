@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 import { verifySessionToken, createSessionToken, setAuthCookie } from '@/api/_lib/auth/session'
 
 // Add all routes that should be accessible without authentication
-const publicRoutes = ['/login', '/setup-passkey', '/register-touch-id', '/api/webauthn/register', '/api/webauthn/authenticate', '/api/auth/logout', '/api/manual-login', '/api/add-manual-passkey']
+const publicRoutes = ['/login', '/setup-passkey', '/register-touch-id', '/api/webauthn/register', '/api/webauthn/authenticate', '/api/auth/logout', '/api/manual-login', '/api/add-manual-passkey', '/api/setup-passkey', '/api/webauthn/authenticate/options', '/api/webauthn/authenticate/verify']
 
 // Session refresh configuration
 const REFRESH_THRESHOLD = 30 * 60 * 1000 // 30 minutes
