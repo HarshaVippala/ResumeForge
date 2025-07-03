@@ -1,6 +1,64 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
+  // Check if setup is enabled
+  const setupEnabled = process.env.ENABLE_PASSKEY_SETUP === 'true'
+  
+  if (!setupEnabled) {
+    return new NextResponse(
+      `<!DOCTYPE html>
+<html>
+<head>
+    <title>Setup Disabled - ResumeForge</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            padding: 40px; 
+            max-width: 500px; 
+            margin: 0 auto; 
+            background: #f8fafc;
+        }
+        .container {
+            background: white;
+            padding: 32px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            text-align: center;
+        }
+        h1 { 
+            color: #ef4444; 
+            margin-bottom: 16px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        p {
+            color: #64748b;
+            margin-bottom: 24px;
+        }
+        a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 Setup Disabled</h1>
+        <p>Passkey setup has been disabled for security.</p>
+        <p>Use the <a href="/login">login page</a> to authenticate with your existing passkey.</p>
+    </div>
+</body>
+</html>`,
+      {
+        headers: { 'Content-Type': 'text/html' },
+      }
+    )
+  }
+
   const html = `
 <!DOCTYPE html>
 <html>
