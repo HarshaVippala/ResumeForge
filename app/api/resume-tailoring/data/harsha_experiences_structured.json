@@ -1,0 +1,42 @@
+[
+  {
+    "company_name": "7-Eleven",
+    "job_title": "Software Engineer II",
+    "dates": "February 2024 – Present",
+    "location": "Irving, TX",
+    "experience_highlights": [
+      "Led design, development, testing, and scaling of serverless Node.js/TypeScript microservices using AWS Lambda and API Gateway, contributing to ~$500K in monthly sales across 60+ stores while ensuring 99.9% uptime",
+      "Integrated AWS IoT Core with in-store edge devices to perform QR code validation and trigger audio feedback, supporting real-time order verification and enhancing the efficiency of in-store transactions",
+      "Refactored critical backend systems to support EBT payment and split-tender logic, enhancing mobile order capabilities and boosting adoption by 15% in key regions",
+      "Improved backend scalability and performance by implementing Redis caching and compound indexes in MongoDB, reducing peak-traffic latency by 40% and increasing system reliability",
+      "Built observability pipelines with CloudWatch Logs Insights and New Relic APM. Defined SLO-based dashboards and automated alerts to cut incident response time by 25% across engineering teams"
+    ],
+    "technologies_used_in_role": ["Node.js", "TypeScript", "AWS Lambda", "API Gateway", "AWS IoT Core", "Redis", "MongoDB", "CloudWatch", "New Relic"]
+  },
+  {
+    "company_name": "Liberty Mutual Insurance",
+    "job_title": "Senior Software Engineer",
+    "dates": "February 2023 - February 2024",
+    "location": "Boston, MA",
+    "experience_highlights": [
+      "Developed resilient GraphQL APIs using NestJS, enabling seamless integration with third-party services and automating quote workflows, eliminating manual processes across teams",
+      "Designed and implemented a user interaction tracking feature using Kafka and AWS Kinesis, providing business teams with real-time insights to drive data-driven product decisions, helping drive a 7% increase in conversion rates",
+      "Refactored the Cart and Checkout class components into functional components using useMemo for subtotal calculations and React.lazy/Suspense for code-splitting, cutting the initial bundle size by 15% while improving code modularity",
+      "Architected scalable GraphQL API layers to support high-throughput quote aggregation with minimal latency, cutting frontend integration complexity and load times by 35%",
+      "Mentored and led 3 interns in building an internal product availability microservice with AWS Lambda & DynamoDB, delivering it on time and integrating it into production workflows"
+    ],
+    "technologies_used_in_role": ["NestJS", "GraphQL", "Kafka", "AWS Kinesis", "React", "AWS Lambda", "DynamoDB"]
+  },
+  {
+    "company_name": "Liberty Mutual Insurance",
+    "job_title": "Software Engineer",
+    "dates": "January 2021 - February 2023",
+    "location": "Boston, MA",
+    "experience_highlights": [
+      "Developed and optimized backend quoting services using Express.js for the insurance platform, handling 87,000+ monthly visits",
+      "Built comprehensive automated end-to-end tests with Cypress, raising test coverage from 60% to 95% and reducing regressions by 40%, which ensured consistent user experiences",
+      "Partnered with product owners to define gRPC contracts, ensuring consistent data models and seamless service integrations"
+    ],
+    "technologies_used_in_role": ["Express.js", "Cypress", "gRPC"]
+  }
+]

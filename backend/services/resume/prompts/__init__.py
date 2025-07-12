@@ -1,1 +1,0 @@
-# Human Voice Prompt Templates
