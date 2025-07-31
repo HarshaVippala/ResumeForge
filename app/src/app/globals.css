@@ -1,0 +1,409 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode - Modern minimalist palette */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    
+    /* Brand colors - Professional blue accent */
+    --primary: 217 91% 45%; /* Darker blue for better contrast */
+    --primary-foreground: 0 0% 98%;
+    
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 5.9% 25%; /* Even darker for better readability */
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    
+    /* Semantic colors - WCAG AA compliant */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 142 71% 30%; /* Darker green for WCAG compliance */
+    --success-foreground: 0 0% 98%;
+    --warning: 38 92% 50%; /* Amber - WCAG compliant */
+    --warning-foreground: 38 90% 15%; /* Dark amber for contrast */
+    --info: 217 91% 45%; /* Matches primary */
+    --info-foreground: 0 0% 98%;
+    
+    --border: 240 5.9% 85%; /* Slightly more visible borders */
+    --input: 240 5.9% 90%;
+    --ring: 217 91% 60%; /* Matches primary */
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Dark mode - Material Design 3 compliant with proper elevation and contrast */
+    /* Base surface - #121212 Material Design recommendation */
+    --background: 0 0% 7%;
+    --foreground: 0 0% 87%; /* 87% opacity for primary text */
+    
+    /* Elevated surfaces with proper Material Design elevation */
+    --card: 0 0% 12%; /* ~#1e1e1e for elevated cards */
+    --card-foreground: 0 0% 87%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 0 0% 87%;
+    
+    /* Brand colors - consistent with light mode */
+    --primary: 217 91% 65%; /* Slightly brighter for dark mode visibility */
+    --primary-foreground: 0 0% 7%;
+    
+    /* Secondary surfaces */
+    --secondary: 0 0% 16%; /* Slightly elevated surface */
+    --secondary-foreground: 0 0% 87%;
+    
+    /* Muted elements */
+    --muted: 0 0% 14%; /* Subtle background variation */
+    --muted-foreground: 0 0% 65%; /* Slightly brighter for better readability */
+    
+    /* Accent elements */
+    --accent: 0 0% 16%;
+    --accent-foreground: 0 0% 87%;
+    
+    /* Semantic colors - WCAG AA compliant for dark mode */
+    --destructive: 0 86% 65%; /* Softer red for dark mode */
+    --destructive-foreground: 0 0% 87%;
+    --success: 142 65% 50%; /* Adjusted green for dark mode */
+    --success-foreground: 0 0% 87%;
+    --warning: 38 85% 60%; /* Brighter amber for dark mode */
+    --warning-foreground: 0 0% 87%; /* Light text on dark amber */
+    --info: 217 91% 65%; /* Matches primary */
+    --info-foreground: 0 0% 87%;
+    
+    /* Borders and inputs */
+    --border: 0 0% 20%; /* More visible borders on dark surfaces */
+    --input: 0 0% 16%; /* Input background */
+    --ring: 217 91% 65%; /* Focus ring matches primary */
+    
+    /* Material Design elevation levels */
+    --elevation-1: 0 0% 10%; /* 1dp elevation */
+    --elevation-2: 0 0% 12%; /* 2dp elevation */
+    --elevation-3: 0 0% 14%; /* 3dp elevation */
+    --elevation-4: 0 0% 16%; /* 4dp elevation */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground min-h-screen font-google-sans;
+  }
+  html {
+    @apply bg-background;
+  }
+  
+  /* Google Sans Font Typography Hierarchy */
+  h1 {
+    @apply font-bold text-2xl;        /* 700 - Main titles */
+  }
+  h2 {
+    @apply font-semibold text-xl;     /* 600 - Section headings */
+  }
+  h3 {
+    @apply font-semibold text-lg;     /* 600 - Subsection headings */
+  }
+  h4 {
+    @apply font-medium text-base;     /* 500 - Small headings */
+  }
+  
+  /* Text hierarchy with better contrast */
+  .text-heading {
+    @apply font-bold text-foreground;         /* 700 - Important text for better readability */
+  }
+  .text-label {
+    @apply font-semibold text-foreground;     /* 600 - Labels, captions */
+  }
+  .text-body {
+    @apply font-normal text-foreground;       /* 400 - Body text */
+  }
+  .text-muted {
+    @apply font-normal text-muted-foreground; /* 400 - Subtle text, but more readable */
+  }
+  .text-accent {
+    @apply font-semibold text-primary;        /* 600 - Accent text using primary color */
+  }
+}
+
+@layer components {
+  .section-card {
+    @apply bg-card border border-border/70 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow;
+  }
+  
+  .elevated-card {
+    @apply bg-card/50 border border-border/40 rounded-xl shadow-sm;
+    box-shadow: 
+      0 1px 3px 0 rgb(0 0 0 / 0.1), 
+      0 1px 2px -1px rgb(0 0 0 / 0.1),
+      inset 0 0 0 1px rgb(0 0 0 / 0.05);
+  }
+  
+  .elevated-card:hover {
+    @apply border-border/60 shadow-md;
+    box-shadow: 
+      0 4px 6px -1px rgb(0 0 0 / 0.1), 
+      0 2px 4px -2px rgb(0 0 0 / 0.1),
+      inset 0 0 0 1px rgb(0 0 0 / 0.08);
+  }
+  
+  .dark .elevated-card {
+    @apply bg-elevation-1/50 border-border/25;
+    box-shadow: 
+      0 1px 3px 0 rgb(0 0 0 / 0.3), 
+      0 1px 2px -1px rgb(0 0 0 / 0.3),
+      inset 0 0 0 1px rgb(255 255 255 / 0.05);
+  }
+  
+  .dark .elevated-card:hover {
+    @apply bg-elevation-2 border-border/40;
+    box-shadow: 
+      0 4px 6px -1px rgb(0 0 0 / 0.4), 
+      0 2px 4px -2px rgb(0 0 0 / 0.4),
+      inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 font-semibold py-2 px-4 rounded-lg transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border font-medium py-2 px-4 rounded-lg transition-colors;
+  }
+  
+  .btn-outline {
+    @apply border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground font-medium py-2 px-4 rounded-lg transition-colors;
+  }
+  
+  .btn-gradient {
+    @apply bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white font-semibold py-2 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+  
+  .ats-terminal {
+    @apply bg-muted text-emerald-400 font-mono text-sm p-4 rounded-lg border border-border;
+  }
+  
+  .glass-card {
+    @apply backdrop-blur-sm bg-card/80 border border-border/50 shadow-lg rounded-lg;
+  }
+  
+  .theme-transition {
+    @apply transition-colors duration-200 ease-in-out;
+  }
+  
+  /* Material Design dark mode enhancements */
+  .elevation-card {
+    @apply bg-elevation-2 shadow-lg;
+  }
+  
+  .elevated-surface {
+    @apply bg-elevation-1;
+  }
+  
+  /* Dark mode specific improvements */
+  .dark .section-card {
+    @apply bg-elevation-2 border-border shadow-2xl;
+  }
+  
+  .dark .glass-card {
+    @apply backdrop-blur-sm bg-elevation-1/90 border-border/30 shadow-2xl;
+  }
+  
+  /* Dark mode navigation improvements */
+  .dark .nav-bg {
+    @apply bg-elevation-1 border-border/20;
+  }
+  
+  /* Dark mode input improvements */
+  .dark input[type="text"],
+  .dark input[type="email"],
+  .dark input[type="password"],
+  .dark textarea,
+  .dark select {
+    @apply bg-elevation-1 border-border text-foreground placeholder:text-muted-foreground;
+  }
+  
+  /* Dark mode hover states */
+  .dark .hover-lift:hover {
+    @apply bg-elevation-3 shadow-xl transform -translate-y-0.5;
+  }
+  
+  /* Progress animation */
+  @keyframes progress {
+    0% {
+      width: 0%;
+    }
+    50% {
+      width: 70%;
+    }
+    100% {
+      width: 90%;
+    }
+  }
+  
+  .animate-progress {
+    animation: progress 3s ease-in-out infinite;
+  }
+
+  /* Shake animation for wrong input */
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+  }
+  
+  .animate-shake {
+    animation: shake 0.5s ease-in-out;
+  }
+
+  /* Fade in animation */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  /* Skeleton loading animation */
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+  
+  .skeleton {
+    @apply relative overflow-hidden bg-muted/50 rounded;
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted) / 0.5) 0%,
+      hsl(var(--muted) / 0.3) 50%,
+      hsl(var(--muted) / 0.5) 100%
+    );
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite linear;
+  }
+
+  /* Smooth number counter */
+  .counter-enter {
+    @apply opacity-0 transform translate-y-full;
+  }
+  
+  .counter-enter-active {
+    @apply opacity-100 transform translate-y-0 transition-all duration-300;
+  }
+
+  /* Magnetic hover effect */
+  .magnetic-hover {
+    @apply transition-transform duration-200 ease-out;
+  }
+  
+  .magnetic-hover:hover {
+    @apply transform scale-105;
+  }
+
+  /* Progressive blur for modals/overlays */
+  .progressive-blur {
+    backdrop-filter: blur(0px);
+    animation: progressiveBlur 0.3s ease-out forwards;
+  }
+  
+  @keyframes progressiveBlur {
+    to {
+      backdrop-filter: blur(8px);
+    }
+  }
+
+  /* Subtle parallax */
+  .parallax-slow {
+    transform: translateY(calc(var(--scroll-y) * 0.3));
+  }
+  
+  .parallax-fast {
+    transform: translateY(calc(var(--scroll-y) * 0.6));
+  }
+
+  /* Smooth reveal on scroll */
+  .reveal {
+    @apply opacity-0 transform translate-y-8;
+  }
+  
+  .reveal.in-view {
+    @apply opacity-100 transform translate-y-0 transition-all duration-700 ease-out;
+  }
+
+  /* Text gradient animation */
+  .gradient-text-animate {
+    background-size: 200% 200%;
+    animation: gradientShift 3s ease infinite;
+  }
+  
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* Subtle morph transition */
+  .morph {
+    transition: border-radius 0.4s ease, transform 0.4s ease;
+  }
+  
+  .morph:hover {
+    border-radius: 1rem;
+  }
+
+  /* AI-generated content indicator */
+  .ai-gradient {
+    @apply relative;
+  }
+  
+  .ai-gradient::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-blue-500/10 rounded-lg opacity-0 transition-opacity duration-300;
+  }
+  
+  .ai-gradient:hover::before {
+    @apply opacity-100;
+  }
+  
+  /* Scrollbar hide utility */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Animated gradient for greeting text */
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradientShift 5s ease infinite;
+  }
+  
+  /* Flex container scrolling fix */
+  .flex-scroll-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0; /* Critical for flex children to scroll properly */
+  }
+  
+  /* Ensure proper scrolling on touch devices */
+  .touch-scroll {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+  }
+}

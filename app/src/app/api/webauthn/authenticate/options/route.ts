@@ -1,0 +1,83 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { generateAuthenticationOptionsForUser } from '@/api/_lib/auth/webauthn'
+import { getSupabase } from '@/api/_lib/db'
+import { isRateLimited, createRateLimitResponse } from '@/api/_lib/auth/rate-limit'
+import { development } from '@/api/_lib/config'
+
+export async function GET(request: NextRequest) {
+  try {
+    // In development with auth disabled, return a friendly message
+    if (development.disableAuth) {
+      return NextResponse.json(
+        { 
+          error: 'Authentication is disabled in development mode',
+          message: 'You should be redirected to the dashboard automatically'
+        },
+        { status: 200 }
+      )
+    }
+    
+    // Check rate limiting
+    const rateLimitResult = isRateLimited(request, 'passkey');
+    if (rateLimitResult.isLimited) {
+      return createRateLimitResponse(rateLimitResult.resetTime);
+    }
+    // Check if Supabase is configured
+    let supabase;
+    try {
+      supabase = getSupabase()
+    } catch (configError) {
+      return NextResponse.json(
+        { 
+          error: 'Database not configured', 
+          message: 'Please set up Supabase environment variables in .env.local',
+          details: 'WebAuthn authentication requires database connection'
+        },
+        { status: 503 }
+      )
+    }
+    
+    // Get existing credentials from database
+    const { data: credentials } = await supabase
+      .from('user_credentials')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (!credentials || credentials.length === 0) {
+      return NextResponse.json(
+        { error: 'No passkeys found. Please register a device first.' },
+        { status: 404 }
+      )
+    }
+
+    // Generate authentication options
+    const options = await generateAuthenticationOptionsForUser(
+      credentials.map(cred => ({
+        id: cred.credential_id,
+        publicKey: cred.public_key,
+        counter: cred.counter,
+        deviceName: cred.device_name,
+        createdAt: new Date(cred.created_at),
+        lastUsed: cred.last_used ? new Date(cred.last_used) : undefined,
+      }))
+    )
+
+    // Store challenge in session for verification
+    const response = NextResponse.json(options)
+    response.cookies.set('webauthn_challenge', options.challenge, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 5, // 5 minutes
+      path: '/',
+    })
+
+    return response
+  } catch (error) {
+    console.error('Error generating authentication options:', error)
+    return NextResponse.json(
+      { error: 'Failed to generate authentication options' },
+      { status: 500 }
+    )
+  }
+}

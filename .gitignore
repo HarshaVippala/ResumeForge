@@ -1,15 +1,20 @@
 # Environment variables and configuration
 .env
-.env.local
+# .env.local
 .env.production
 .env.development
 *.env
+*.md
 
 # Sensitive credential files
 **/gmail_credentials.json
 **/gmail_token.json
 **/credentials.json
 **/token.json
+client_secret*.json
+*-*-*.json
+!package*.json
+!tsconfig*.json
 *.txt
 !backend/prompts/*.txt
 # Database files
@@ -122,8 +127,19 @@ htmlcov/
 
 # Local test outputs
 test_outputs/
+test-results/
 test_*.txt
 test_*.log
+test_*.py
+test_*.docx
+test_*.pdf
+
+# Generated resumes
+*_resume.docx
+*_resume.pdf
+harsha_vippala_*.docx
+harsha_vippala_*.pdf
+generate_tailored_resume.py
 
 # Claude configuration file
 CLAUDE.md

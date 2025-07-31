@@ -1,0 +1,10 @@
+{
+  "programming_languages": ["Node.js", "TypeScript", "Python", "JavaScript"],
+  "frameworks_libraries_tools": ["NestJS", "Next.js", "React", "Express.js", "Git", "Jest", "Cypress"],
+  "databases": ["MongoDB", "MySQL", "PostgreSQL", "DynamoDB", "AWS RDS", "Redshift", "Redis"],
+  "cloud_devops_tools": ["AWS Lambda", "AWS EC2", "AWS S3", "AWS ECS", "CloudFormation", "AWS IAM", "AWS VPC", "AWS SQS", "AWS SNS", "Docker", "Kubernetes", "Terraform", "Ansible", "Jenkins", "GitLab CI/CD", "GitHub Actions"],
+  "architecture_design_concepts": ["Microservices", "Serverless", "Event-Driven", "RESTful APIs", "GraphQL", "gRPC", "OAuth 2.0", "JWT security", "SSO", "OpenID"],
+  "monitoring_observability": ["New Relic", "Datadog", "CloudWatch", "ELK", "Open Telemetry", "Grafana"],
+  "ai_ml_tools": ["AWS Bedrock", "Vertex AI", "RAG", "NLP", "OpenAI APIs", "LangGraph"],
+  "additional_skills": ["Kafka", "Pinecone", "Supabase", "Swagger/OpenAPI", "Postman", "AWS IoT Core", "AWS Kinesis"]
+}
